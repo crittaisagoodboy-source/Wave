@@ -5,312 +5,166 @@
 <title>WAVE</title>
 <style>
   *, *::before, *::after { margin: 0; padding: 0; box-sizing: border-box; }
-
   html, body {
     width: 100vw; height: 100vh;
     background: transparent !important;
     font-family: 'Segoe UI', sans-serif;
-    overflow: hidden;
-    user-select: none;
-    cursor: none;
+    overflow: hidden; user-select: none; cursor: none;
   }
-
   #cursor {
-    position: fixed;
-    width: 12px; height: 12px;
-    background: #fff;
-    border-radius: 50%;
-    pointer-events: none;
-    transform: translate(-50%, -50%);
-    z-index: 9999;
-    box-shadow: 0 0 6px rgba(255,255,255,0.8);
+    position: fixed; width: 12px; height: 12px; background: #fff;
+    border-radius: 50%; pointer-events: none; transform: translate(-50%,-50%);
+    z-index: 9999; box-shadow: 0 0 6px rgba(255,255,255,0.8);
     left: -999px; top: -999px;
   }
-  #cursor.clicking {
-    transform: translate(-50%, -50%) scale(0.7);
-    background: #a78bfa;
-  }
-
+  #cursor.clicking { transform: translate(-50%,-50%) scale(0.7); background: #a78bfa; }
   #menu {
-    position: absolute;
-    top: 50%; left: 50%;
-    transform: translate(-50%, -50%);
-    display: flex;
-    width: 760px; height: 520px;
-    background: rgba(10, 10, 20, 0.97);
-    border: 1px solid rgba(255,255,255,0.08);
+    position: absolute; top: 50%; left: 50%; transform: translate(-50%,-50%);
+    display: flex; width: 760px; height: 520px;
+    background: rgba(10,10,20,0.97); border: 1px solid rgba(255,255,255,0.08);
     border-radius: 8px;
     box-shadow: 0 24px 80px rgba(0,0,0,0.9), inset 0 1px 0 rgba(255,255,255,0.05);
     overflow: hidden;
   }
-
-  #stars-wrap {
-    position: absolute; inset: 0;
-    pointer-events: none;
-    overflow: hidden;
-    border-radius: 8px;
-  }
+  #stars-wrap { position: absolute; inset: 0; pointer-events: none; overflow: hidden; border-radius: 8px; }
   .star {
-    position: absolute;
-    width: 2px; height: 2px;
-    background: rgba(255,255,255,0.3);
-    border-radius: 50%;
-    animation: twinkle var(--dur) var(--delay) infinite ease-in-out;
+    position: absolute; width: 2px; height: 2px; background: rgba(255,255,255,0.3);
+    border-radius: 50%; animation: twinkle var(--dur) var(--delay) infinite ease-in-out;
   }
   @keyframes twinkle { 0%,100%{opacity:.1} 50%{opacity:.8} }
-
   #sidebar {
-    width: 160px;
-    flex-shrink: 0;
-    border-right: 1px solid rgba(255,255,255,0.06);
-    display: flex;
-    flex-direction: column;
-    padding: 0 0 12px;
-    overflow-y: auto;
-    overflow-x: hidden;
-    position: relative;
-    z-index: 1;
+    width: 160px; flex-shrink: 0; border-right: 1px solid rgba(255,255,255,0.06);
+    display: flex; flex-direction: column; padding: 0 0 12px;
+    overflow-y: auto; overflow-x: hidden; position: relative; z-index: 1;
   }
   #sidebar::-webkit-scrollbar { width: 2px; }
   #sidebar::-webkit-scrollbar-thumb { background: rgba(255,255,255,0.08); }
-
   .logo {
-    font-size: 16px;
-    font-weight: 900;
-    letter-spacing: 6px;
-    color: #fff;
-    padding: 20px 18px 16px;
-    border-bottom: 1px solid rgba(255,255,255,0.06);
-    margin-bottom: 8px;
-    flex-shrink: 0;
+    font-size: 16px; font-weight: 900; letter-spacing: 6px; color: #fff;
+    padding: 20px 18px 16px; border-bottom: 1px solid rgba(255,255,255,0.06);
+    margin-bottom: 8px; flex-shrink: 0;
   }
-
   .nav-item {
-    margin: 1px 8px;
-    padding: 8px 12px;
-    border-radius: 4px;
-    font-size: 12px;
-    color: rgba(255,255,255,0.45);
-    cursor: pointer;
-    transition: background 0.12s, color 0.12s;
-    position: relative;
-    white-space: nowrap;
-    overflow: hidden;
-    text-overflow: ellipsis;
-    flex-shrink: 0;
+    margin: 1px 8px; padding: 8px 12px; border-radius: 4px; font-size: 12px;
+    color: rgba(255,255,255,0.45); cursor: pointer;
+    transition: background 0.12s, color 0.12s; position: relative;
+    white-space: nowrap; overflow: hidden; text-overflow: ellipsis; flex-shrink: 0;
   }
   .nav-item:hover { background: rgba(255,255,255,0.05); color: rgba(255,255,255,0.8); }
-  .nav-item.active {
-    background: rgba(139,92,246,0.18);
-    color: #c4b5fd;
-  }
+  .nav-item.active { background: rgba(139,92,246,0.18); color: #c4b5fd; }
   .nav-item.active::before {
-    content: '';
-    position: absolute;
-    left: 0; top: 50%;
-    transform: translateY(-50%);
-    width: 2px; height: 55%;
-    background: #8b5cf6;
-    border-radius: 0 2px 2px 0;
+    content: ''; position: absolute; left: 0; top: 50%; transform: translateY(-50%);
+    width: 2px; height: 55%; background: #8b5cf6; border-radius: 0 2px 2px 0;
   }
-
   #content {
-    flex: 1;
-    padding: 22px 24px;
-    overflow-y: auto;
-    overflow-x: hidden;
-    position: relative;
-    z-index: 1;
+    flex: 1; padding: 22px 24px; overflow-y: auto; overflow-x: hidden;
+    position: relative; z-index: 1;
   }
   #content::-webkit-scrollbar { width: 3px; }
   #content::-webkit-scrollbar-thumb { background: rgba(255,255,255,0.08); border-radius: 2px; }
-
   .page { display: none; }
   .page.active { display: block; }
-
-  .page-title {
-    font-size: 15px;
-    font-weight: 600;
-    color: #fff;
-    margin-bottom: 14px;
-    letter-spacing: 0.3px;
-  }
-
-  .w-sep {
-    border: none;
-    border-top: 1px solid rgba(255,255,255,0.06);
-    margin: 10px 0 8px;
-    position: relative;
-  }
+  .page-title { font-size: 15px; font-weight: 600; color: #fff; margin-bottom: 14px; letter-spacing: 0.3px; }
+  .w-sep { border: none; border-top: 1px solid rgba(255,255,255,0.06); margin: 10px 0 8px; position: relative; }
   .w-sep[data-label]:not([data-label=""])::before {
-    content: attr(data-label);
-    position: absolute;
-    top: 50%; left: 0;
-    transform: translateY(-50%);
-    padding-right: 10px;
-    background: rgba(10,10,20,0.97);
-    font-size: 9px;
-    font-weight: 700;
-    letter-spacing: 2px;
-    color: rgba(255,255,255,0.22);
-    text-transform: uppercase;
+    content: attr(data-label); position: absolute; top: 50%; left: 0;
+    transform: translateY(-50%); padding-right: 10px;
+    background: rgba(10,10,20,0.97); font-size: 9px; font-weight: 700;
+    letter-spacing: 2px; color: rgba(255,255,255,0.22); text-transform: uppercase;
   }
-
-  .w-toggle-row {
-    display: flex;
-    align-items: center;
-    justify-content: space-between;
-    padding: 5px 2px;
-  }
+  .w-toggle-row { display: flex; align-items: center; justify-content: space-between; padding: 5px 2px; }
   .w-toggle-label { font-size: 12px; color: rgba(255,255,255,0.62); }
-
   .w-toggle { position: relative; width: 36px; height: 20px; flex-shrink: 0; }
   .w-toggle input { display: none; }
   .w-track {
-    position: absolute; inset: 0;
-    background: rgba(255,255,255,0.1);
-    border-radius: 10px;
-    border: 1px solid rgba(255,255,255,0.07);
-    cursor: pointer;
-    transition: background 0.2s;
+    position: absolute; inset: 0; background: rgba(255,255,255,0.1);
+    border-radius: 10px; border: 1px solid rgba(255,255,255,0.07);
+    cursor: pointer; transition: background 0.2s;
   }
   .w-track::after {
-    content: '';
-    position: absolute;
-    top: 3px; left: 3px;
-    width: 12px; height: 12px;
-    background: rgba(255,255,255,0.35);
-    border-radius: 50%;
-    transition: transform 0.2s, background 0.2s;
+    content: ''; position: absolute; top: 3px; left: 3px;
+    width: 12px; height: 12px; background: rgba(255,255,255,0.35);
+    border-radius: 50%; transition: transform 0.2s, background 0.2s;
   }
   .w-toggle input:checked + .w-track { background: rgba(139,92,246,0.4); border-color: rgba(139,92,246,0.5); }
   .w-toggle input:checked + .w-track::after { transform: translateX(16px); background: #a78bfa; }
-
-  .w-slider-row {
-    display: flex;
-    align-items: center;
-    padding: 5px 2px;
-    gap: 10px;
-  }
+  .w-slider-row { display: flex; align-items: center; padding: 5px 2px; gap: 10px; }
   .w-slider-label { font-size: 12px; color: rgba(255,255,255,0.62); flex-shrink: 0; }
   .w-slider-val { font-size: 11px; color: rgba(255,255,255,0.35); width: 28px; text-align: right; flex-shrink: 0; }
   .w-slider-wrap { flex: 1; }
   input[type=range] {
-    -webkit-appearance: none;
-    width: 100%; height: 3px;
-    background: rgba(255,255,255,0.1);
-    border-radius: 2px;
-    outline: none;
-    cursor: pointer;
+    -webkit-appearance: none; width: 100%; height: 3px;
+    background: rgba(255,255,255,0.1); border-radius: 2px; outline: none; cursor: pointer;
   }
   input[type=range]::-webkit-slider-thumb {
-    -webkit-appearance: none;
-    width: 12px; height: 12px;
-    background: #8b5cf6;
-    border-radius: 50%;
-    box-shadow: 0 0 6px rgba(139,92,246,0.7);
+    -webkit-appearance: none; width: 12px; height: 12px; background: #8b5cf6;
+    border-radius: 50%; box-shadow: 0 0 6px rgba(139,92,246,0.7);
   }
-
   .w-btn {
-    width: 100%;
-    padding: 8px 12px;
-    background: rgba(255,255,255,0.04);
-    border: 1px solid rgba(255,255,255,0.07);
-    border-radius: 4px;
-    color: rgba(255,255,255,0.55);
-    font-size: 12px;
-    font-family: inherit;
-    cursor: pointer;
-    transition: background 0.12s, border-color 0.12s, color 0.12s;
-    text-align: center;
-    margin: 3px 0;
-    display: block;
-    line-height: 1.4;
-    position: relative;
-    z-index: 2;
+    width: 100%; padding: 8px 12px; background: rgba(255,255,255,0.04);
+    border: 1px solid rgba(255,255,255,0.07); border-radius: 4px;
+    color: rgba(255,255,255,0.55); font-size: 12px; font-family: inherit;
+    cursor: pointer; transition: background 0.12s, border-color 0.12s, color 0.12s;
+    text-align: center; margin: 3px 0; display: block; line-height: 1.4;
+    position: relative; z-index: 2;
   }
   .w-btn:hover { background: rgba(255,255,255,0.08); border-color: rgba(255,255,255,0.14); color: #fff; }
   .w-btn.pressed { background: rgba(139,92,246,0.15); border-color: rgba(139,92,246,0.35); color: #c4b5fd; }
-
   #toast {
-    position: fixed;
-    bottom: 28px; left: 50%;
+    position: fixed; bottom: 28px; left: 50%;
     transform: translateX(-50%) translateY(16px);
-    background: rgba(139,92,246,0.18);
-    border: 1px solid rgba(139,92,246,0.35);
-    color: #c4b5fd;
-    padding: 7px 18px;
-    border-radius: 4px;
-    font-size: 12px;
-    opacity: 0;
-    transition: opacity 0.2s, transform 0.2s;
-    pointer-events: none;
-    z-index: 1000;
-    white-space: nowrap;
+    background: rgba(139,92,246,0.18); border: 1px solid rgba(139,92,246,0.35);
+    color: #c4b5fd; padding: 7px 18px; border-radius: 4px; font-size: 12px;
+    opacity: 0; transition: opacity 0.2s, transform 0.2s;
+    pointer-events: none; z-index: 1000; white-space: nowrap;
   }
   #toast.show { opacity: 1; transform: translateX(-50%) translateY(0); }
 </style>
 </head>
 <body>
-
 <div id="cursor"></div>
 <div id="toast"></div>
-
 <div id="menu">
   <div id="stars-wrap"></div>
   <div id="sidebar"><div class="logo">W A V E</div></div>
   <div id="content"></div>
 </div>
-
 <script>
-// ── MUST be first — Lua polls this before anything else runs ───────────────
+// ── Callback queue — must exist immediately ────────────────────────
 window._waveCallbackQueue = [];
 function queueCallback(id, value) {
   window._waveCallbackQueue.push({ type: 'callback', callbackId: id, value: value });
 }
 
-// ── Stars ──────────────────────────────────────────────────────────────────
-(function(){
-  const w = document.getElementById('stars-wrap');
-  for(let i=0;i<50;i++){
-    const s = document.createElement('div');
-    s.className='star';
-    s.style.cssText='left:'+Math.random()*100+'%;top:'+Math.random()*100+'%;--dur:'+(2+Math.random()*5)+'s;--delay:'+Math.random()*6+'s';
-    w.appendChild(s);
-  }
-})();
+// ── DOM refs ───────────────────────────────────────────────────────
+var pages    = {};
+var sidebar  = document.getElementById('sidebar');
+var content  = document.getElementById('content');
+var cursor   = document.getElementById('cursor');
+var active   = null;
+var toastTmr = null;
 
-// ── State ──────────────────────────────────────────────────────────────────
-const pages   = {};
-const sidebar = document.getElementById('sidebar');
-const content = document.getElementById('content');
-let   active  = null;
-let   toastTmr = null;
-
+// ── Helpers ────────────────────────────────────────────────────────
 function getOrMakePage(id) {
   if (pages[id]) return pages[id];
 
-  const nav = document.createElement('div');
+  var nav = document.createElement('div');
   nav.className = 'nav-item';
   nav.textContent = id;
-  nav.addEventListener('click', function(){ switchPage(id); });
+  (function(pid){ nav.addEventListener('click', function(){ switchPage(pid); }); })(id);
   sidebar.appendChild(nav);
 
-  const pg = document.createElement('div');
+  var pg = document.createElement('div');
   pg.className = 'page';
-
-  const title = document.createElement('div');
+  var title = document.createElement('div');
   title.className = 'page-title';
   title.textContent = id;
   pg.appendChild(title);
-
   content.appendChild(pg);
 
-  const entry = { navEl: nav, pageEl: pg };
+  var entry = { navEl: nav, pageEl: pg };
   pages[id] = entry;
-
   if (!active) switchPage(id);
-
   return entry;
 }
 
@@ -320,10 +174,9 @@ function switchPage(id) {
     pages[keys[i]].navEl.classList.remove('active');
     pages[keys[i]].pageEl.classList.remove('active');
   }
-  var e = pages[id];
-  if (!e) return;
-  e.navEl.classList.add('active');
-  e.pageEl.classList.add('active');
+  if (!pages[id]) return;
+  pages[id].navEl.classList.add('active');
+  pages[id].pageEl.classList.add('active');
   active = id;
 }
 
@@ -335,11 +188,8 @@ function showToast(msg) {
   toastTmr = setTimeout(function(){ t.classList.remove('show'); }, 2200);
 }
 
-const cursor = document.getElementById('cursor');
-
-// ── Message handler ────────────────────────────────────────────────────────
-window.addEventListener('message', function(e) {
-  var d = e.data;
+// ── Message dispatcher ─────────────────────────────────────────────
+function handleMsg(d) {
   if (!d || !d.type) return;
 
   if (d.type === 'mouseMove') {
@@ -350,9 +200,7 @@ window.addEventListener('message', function(e) {
     cursor.classList.add('clicking');
     setTimeout(function(){ cursor.classList.remove('clicking'); }, 120);
     var el = document.elementFromPoint(d.x, d.y);
-    if (el) {
-      el.dispatchEvent(new MouseEvent('click', { bubbles: true, cancelable: true }));
-    }
+    if (el) el.dispatchEvent(new MouseEvent('click', { bubbles: true, cancelable: true }));
 
   } else if (d.type === 'CreatePage') {
     getOrMakePage(d.pageId);
@@ -361,25 +209,19 @@ window.addEventListener('message', function(e) {
     var pg = getOrMakePage(d.pageId);
     var row = document.createElement('div');
     row.className = 'w-toggle-row';
-
     var lbl = document.createElement('span');
     lbl.className = 'w-toggle-label';
     lbl.textContent = d.label;
-
     var tog = document.createElement('label');
     tog.className = 'w-toggle';
-
     var inp = document.createElement('input');
     inp.type = 'checkbox';
     inp.checked = !!d.state;
-
     var track = document.createElement('span');
     track.className = 'w-track';
-
     (function(cbId, input){
       input.addEventListener('change', function(){ queueCallback(cbId, input.checked); });
     })(d.callbackId, inp);
-
     tog.appendChild(inp);
     tog.appendChild(track);
     row.appendChild(lbl);
@@ -390,31 +232,22 @@ window.addEventListener('message', function(e) {
     var pg = getOrMakePage(d.pageId);
     var row = document.createElement('div');
     row.className = 'w-slider-row';
-
     var lbl = document.createElement('span');
     lbl.className = 'w-slider-label';
     lbl.textContent = d.label;
-
     var valEl = document.createElement('span');
     valEl.className = 'w-slider-val';
     valEl.textContent = d['default'];
-
     var wrap = document.createElement('div');
     wrap.className = 'w-slider-wrap';
-
     var inp = document.createElement('input');
-    inp.type = 'range';
-    inp.min = d.min;
-    inp.max = d.max;
-    inp.value = d['default'];
-
+    inp.type = 'range'; inp.min = d.min; inp.max = d.max; inp.value = d['default'];
     (function(cbId, input, display){
       input.addEventListener('input', function(){
         display.textContent = input.value;
         queueCallback(cbId, parseFloat(input.value));
       });
     })(d.callbackId, inp, valEl);
-
     wrap.appendChild(inp);
     row.appendChild(lbl);
     row.appendChild(valEl);
@@ -426,7 +259,6 @@ window.addEventListener('message', function(e) {
     var btn = document.createElement('div');
     btn.className = 'w-btn';
     btn.textContent = d.label;
-
     (function(cbId, el){
       el.addEventListener('click', function(){
         el.classList.add('pressed');
@@ -434,7 +266,6 @@ window.addEventListener('message', function(e) {
         queueCallback(cbId, true);
       });
     })(d.callbackId, btn);
-
     pg.pageEl.appendChild(btn);
 
   } else if (d.type === 'CreateSeparator') {
@@ -447,7 +278,28 @@ window.addEventListener('message', function(e) {
   } else if (d.type === 'Toast') {
     showToast(d.message);
   }
+}
+
+// ── MachoSendDuiMessage arrives as a string via window "message" event ──
+window.addEventListener('message', function(e) {
+  var raw = e.data;
+  // Macho posts a JSON string — parse it first
+  if (typeof raw === 'string') {
+    try { raw = JSON.parse(raw); } catch(x) { return; }
+  }
+  handleMsg(raw);
 });
+
+// ── Stars ──────────────────────────────────────────────────────────
+(function(){
+  var w = document.getElementById('stars-wrap');
+  for (var i = 0; i < 50; i++) {
+    var s = document.createElement('div');
+    s.className = 'star';
+    s.style.cssText = 'left:' + (Math.random()*100) + '%;top:' + (Math.random()*100) + '%;--dur:' + (2+Math.random()*5) + 's;--delay:' + (Math.random()*6) + 's';
+    w.appendChild(s);
+  }
+})();
 </script>
 </body>
 </html>
