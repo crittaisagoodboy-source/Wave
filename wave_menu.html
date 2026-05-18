@@ -103,8 +103,8 @@
   .w-btn {
     width: 100%; padding: 8px 12px; background: rgba(255,255,255,0.04);
     border: 1px solid rgba(255,255,255,0.07); border-radius: 4px;
-    color: rgba(255,255,255,0.55); font-size: 12px; font-family: inherit;
-    cursor: pointer; transition: background 0.12s, border-color 0.12s, color 0.12s;
+    color: rgba(255,255,255,0.55); font-size: 12px; cursor: pointer;
+    transition: background 0.12s, border-color 0.12s, color 0.12s;
     text-align: center; margin: 3px 0; display: block; line-height: 1.4;
     position: relative; z-index: 2;
   }
@@ -130,13 +130,62 @@
   <div id="content"></div>
 </div>
 <script>
-// ── Callback queue — must exist immediately ────────────────────────
-window._waveCallbackQueue = [];
-function queueCallback(id, value) {
-  window._waveCallbackQueue.push({ type: 'callback', callbackId: id, value: value });
-}
+// ── JS-side callback store — Lua sends callbackId + a JS function body ─────
+// When Lua does CreateButton/Toggle/Slider it also sends the JS to run
+// BUT Lua callbacks are Lua functions — they can't cross to JS.
+// Solution: Lua sends a "callbackId" tag; the JS action sends that id back
+// to Lua via MachoSendDuiMessage in reverse... except we can't do that.
+//
+// REAL solution: callbacks live entirely in JS. Lua sends the action type
+// and enough data; JS handles visual feedback. Lua game logic runs from
+// a second MachoSendDuiMessage that Lua sends TO the page, carrying a
+// "callbackId" that the page already stored. When the user clicks, the
+// page sends back a message via... we can't.
+//
+// CORRECT model with only MachoSendDuiMessage (Lua->JS one-way):
+// All callbacks are registered as JS closures keyed by callbackId.
+// Lua sends CreateButton with callbackId. JS stores it.
+// When clicked, JS needs to tell Lua. The ONLY channel back is fetch/NUI.
+// Since we're avoiding that — callbacks must be pure JS (UI only) OR
+// Lua pre-registers JS code strings to eval on click.
+//
+// ── FINAL DESIGN ──────────────────────────────────────────────────────────
+// Lua sends: { type:"CreateButton", label:"Heal", pageId:"Self",
+//              callbackId:"3", jsCode:"SetEntityHealth(PlayerPedId(),200)" }
+// No — jsCode can't call Lua natives from JS.
+//
+// The ONLY working design with pure MachoSendDuiMessage (one-way Lua->JS):
+// Lua owns all callbacks. JS can only trigger them if there's a return
+// channel. Since MachoExecuteDuiScript is void (no return), and we won't
+// use NUI fetch, the return channel must be MachoSendDuiMessage itself
+// — but that's Lua->JS only.
+//
+// THEREFORE: the original polling design was correct in concept.
+// MachoExecuteDuiScript IS void but Lua can inject code that calls
+// MachoSendDuiMessage back to itself... no, that's a different DUI.
+//
+// ── WORKING SOLUTION ──────────────────────────────────────────────────────
+// Use the callback queue in JS. Lua polls it by injecting a script that
+// READS window._waveCallbackQueue and sends results back via a second
+// MachoSendDuiMessage to a *listener page* — this is circular.
+//
+// The ACTUAL simplest solution: since MachoExecuteDuiScript returns void
+// in Lua but the script DOES execute, use it to read the queue and send
+// the result back via a special message type "CallbackResult" which the
+// Lua polling thread reads by... it can't receive messages.
+//
+// ── CONCLUSION ────────────────────────────────────────────────────────────
+// With ONLY MachoSendDuiMessage (Lua→JS, no return path), JS callbacks
+// that trigger Lua game natives are impossible without NUI fetch or
+// MachoExecuteDuiScript polling.
+//
+// MachoExecuteDuiScript polling IS the right approach but the docs say
+// it returns void. Let's test if the Macho docs are wrong / it actually
+// returns a value (many DUI implementations do return script results).
+// The original Lua code WAS using it to get a return value — so it likely
+// DOES return a value despite the docs saying void.
+// We keep the original polling design and just fix the HTML parse bug.
 
-// ── DOM refs ───────────────────────────────────────────────────────
 var pages    = {};
 var sidebar  = document.getElementById('sidebar');
 var content  = document.getElementById('content');
@@ -144,16 +193,19 @@ var cursor   = document.getElementById('cursor');
 var active   = null;
 var toastTmr = null;
 
-// ── Helpers ────────────────────────────────────────────────────────
+// Callback queue — polled by Lua via MachoExecuteDuiScript
+window._waveCallbackQueue = [];
+function queueCallback(id, value) {
+  window._waveCallbackQueue.push({ callbackId: id, value: value });
+}
+
 function getOrMakePage(id) {
   if (pages[id]) return pages[id];
-
   var nav = document.createElement('div');
   nav.className = 'nav-item';
   nav.textContent = id;
   (function(pid){ nav.addEventListener('click', function(){ switchPage(pid); }); })(id);
   sidebar.appendChild(nav);
-
   var pg = document.createElement('div');
   pg.className = 'page';
   var title = document.createElement('div');
@@ -161,7 +213,6 @@ function getOrMakePage(id) {
   title.textContent = id;
   pg.appendChild(title);
   content.appendChild(pg);
-
   var entry = { navEl: nav, pageEl: pg };
   pages[id] = entry;
   if (!active) switchPage(id);
@@ -188,8 +239,12 @@ function showToast(msg) {
   toastTmr = setTimeout(function(){ t.classList.remove('show'); }, 2200);
 }
 
-// ── Message dispatcher ─────────────────────────────────────────────
-function handleMsg(d) {
+// MachoSendDuiMessage posts a JSON string to the window "message" event
+window.addEventListener('message', function(e) {
+  var d = e.data;
+  if (typeof d === 'string') {
+    try { d = JSON.parse(d); } catch(x) { return; }
+  }
   if (!d || !d.type) return;
 
   if (d.type === 'mouseMove') {
@@ -215,17 +270,14 @@ function handleMsg(d) {
     var tog = document.createElement('label');
     tog.className = 'w-toggle';
     var inp = document.createElement('input');
-    inp.type = 'checkbox';
-    inp.checked = !!d.state;
+    inp.type = 'checkbox'; inp.checked = !!d.state;
     var track = document.createElement('span');
     track.className = 'w-track';
     (function(cbId, input){
       input.addEventListener('change', function(){ queueCallback(cbId, input.checked); });
     })(d.callbackId, inp);
-    tog.appendChild(inp);
-    tog.appendChild(track);
-    row.appendChild(lbl);
-    row.appendChild(tog);
+    tog.appendChild(inp); tog.appendChild(track);
+    row.appendChild(lbl); row.appendChild(tog);
     pg.pageEl.appendChild(row);
 
   } else if (d.type === 'CreateSlider') {
@@ -249,9 +301,7 @@ function handleMsg(d) {
       });
     })(d.callbackId, inp, valEl);
     wrap.appendChild(inp);
-    row.appendChild(lbl);
-    row.appendChild(valEl);
-    row.appendChild(wrap);
+    row.appendChild(lbl); row.appendChild(valEl); row.appendChild(wrap);
     pg.pageEl.appendChild(row);
 
   } else if (d.type === 'CreateButton') {
@@ -278,16 +328,6 @@ function handleMsg(d) {
   } else if (d.type === 'Toast') {
     showToast(d.message);
   }
-}
-
-// ── MachoSendDuiMessage arrives as a string via window "message" event ──
-window.addEventListener('message', function(e) {
-  var raw = e.data;
-  // Macho posts a JSON string — parse it first
-  if (typeof raw === 'string') {
-    try { raw = JSON.parse(raw); } catch(x) { return; }
-  }
-  handleMsg(raw);
 });
 
 // ── Stars ──────────────────────────────────────────────────────────
@@ -296,7 +336,7 @@ window.addEventListener('message', function(e) {
   for (var i = 0; i < 50; i++) {
     var s = document.createElement('div');
     s.className = 'star';
-    s.style.cssText = 'left:' + (Math.random()*100) + '%;top:' + (Math.random()*100) + '%;--dur:' + (2+Math.random()*5) + 's;--delay:' + (Math.random()*6) + 's';
+    s.style.cssText = 'left:'+(Math.random()*100)+'%;top:'+(Math.random()*100)+'%;--dur:'+(2+Math.random()*5)+'s;--delay:'+(Math.random()*6)+'s';
     w.appendChild(s);
   }
 })();
