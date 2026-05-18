@@ -4,12 +4,13 @@
 <meta charset="UTF-8">
 <title>WAVE</title>
 <style>
-  * { margin: 0; padding: 0; box-sizing: border-box; }
+  *, *::before, *::after { margin: 0; padding: 0; box-sizing: border-box; }
 
-  body {
+  html, body {
     width: 100vw;
     height: 100vh;
-    background: transparent;
+    /* FULLY transparent so game shows through */
+    background: transparent !important;
     font-family: 'Segoe UI', sans-serif;
     overflow: hidden;
     user-select: none;
@@ -25,84 +26,96 @@
     transform: translate(-50%, -50%);
     z-index: 9999;
     box-shadow: 0 0 6px rgba(255,255,255,0.8);
-    transition: transform 0.05s ease;
-    left: -100px; top: -100px;
+    left: -999px; top: -999px;
   }
   #cursor.clicking {
     transform: translate(-50%, -50%) scale(0.7);
     background: #a78bfa;
   }
 
+  /* The menu box itself has the dark background */
   #menu {
     position: absolute;
     top: 50%; left: 50%;
     transform: translate(-50%, -50%);
     display: flex;
     width: 760px; height: 520px;
-    background: rgba(10, 10, 18, 0.93);
-    border: 1px solid rgba(255,255,255,0.07);
-    border-radius: 6px;
-    box-shadow: 0 20px 60px rgba(0,0,0,0.8), inset 0 1px 0 rgba(255,255,255,0.05);
-    backdrop-filter: blur(12px);
+    background: rgba(10, 10, 20, 0.97);
+    border: 1px solid rgba(255,255,255,0.08);
+    border-radius: 8px;
+    box-shadow: 0 24px 80px rgba(0,0,0,0.9), inset 0 1px 0 rgba(255,255,255,0.05);
     overflow: hidden;
   }
 
+  /* stars only inside the menu */
+  #stars-wrap {
+    position: absolute; inset: 0;
+    pointer-events: none;
+    overflow: hidden;
+    border-radius: 8px;
+  }
   .star {
     position: absolute;
     width: 2px; height: 2px;
-    background: rgba(255,255,255,0.35);
+    background: rgba(255,255,255,0.3);
     border-radius: 50%;
-    animation: twinkle var(--dur) infinite ease-in-out;
-    animation-delay: var(--delay);
+    animation: twinkle var(--dur) var(--delay) infinite ease-in-out;
   }
-  @keyframes twinkle { 0%,100%{opacity:.15} 50%{opacity:.85} }
+  @keyframes twinkle { 0%,100%{opacity:.1} 50%{opacity:.8} }
 
   /* ── Sidebar ── */
   #sidebar {
     width: 160px;
-    background: rgba(255,255,255,0.02);
-    border-right: 1px solid rgba(255,255,255,0.06);
-    padding: 20px 0;
     flex-shrink: 0;
+    border-right: 1px solid rgba(255,255,255,0.06);
     display: flex;
     flex-direction: column;
+    padding: 0 0 12px;
     overflow-y: auto;
     overflow-x: hidden;
+    position: relative;
+    z-index: 1;
   }
   #sidebar::-webkit-scrollbar { width: 2px; }
   #sidebar::-webkit-scrollbar-thumb { background: rgba(255,255,255,0.08); }
 
-  .sidebar-logo {
-    font-size: 17px;
-    font-weight: 800;
-    letter-spacing: 5px;
+  .logo {
+    font-size: 16px;
+    font-weight: 900;
+    letter-spacing: 6px;
     color: #fff;
-    padding: 0 18px 16px;
+    padding: 20px 18px 16px;
     border-bottom: 1px solid rgba(255,255,255,0.06);
     margin-bottom: 8px;
+    flex-shrink: 0;
   }
 
-  .sidebar-item {
+  .nav-item {
     margin: 1px 8px;
-    padding: 7px 12px;
+    padding: 8px 12px;
     border-radius: 4px;
     font-size: 12px;
-    color: rgba(255,255,255,0.5);
+    color: rgba(255,255,255,0.45);
     cursor: pointer;
-    transition: background 0.15s, color 0.15s;
+    transition: background 0.12s, color 0.12s;
     position: relative;
     white-space: nowrap;
     overflow: hidden;
     text-overflow: ellipsis;
+    flex-shrink: 0;
   }
-  .sidebar-item:hover { background: rgba(255,255,255,0.05); color: rgba(255,255,255,0.85); }
-  .sidebar-item.active { background: rgba(167,139,250,0.14); color: #c4b5fd; }
-  .sidebar-item.active::before {
+  .nav-item:hover { background: rgba(255,255,255,0.05); color: rgba(255,255,255,0.8); }
+  .nav-item.active {
+    background: rgba(139,92,246,0.18);
+    color: #c4b5fd;
+  }
+  .nav-item.active::before {
     content: '';
     position: absolute;
-    left: 0; top: 50%; transform: translateY(-50%);
-    width: 2px; height: 60%;
-    background: #a78bfa;
+    left: 0; top: 50%;
+    transform: translateY(-50%);
+    width: 2px; height: 55%;
+    background: #8b5cf6;
     border-radius: 0 2px 2px 0;
   }
 
@@ -113,9 +126,10 @@
     overflow-y: auto;
     overflow-x: hidden;
     position: relative;
+    z-index: 1;
   }
   #content::-webkit-scrollbar { width: 3px; }
-  #content::-webkit-scrollbar-thumb { background: rgba(255,255,255,0.1); border-radius: 2px; }
+  #content::-webkit-scrollbar-thumb { background: rgba(255,255,255,0.08); border-radius: 2px; }
 
   .page { display: none; }
   .page.active { display: block; }
@@ -124,49 +138,69 @@
     font-size: 15px;
     font-weight: 600;
     color: #fff;
-    margin-bottom: 16px;
-    letter-spacing: 0.5px;
+    margin-bottom: 14px;
+    letter-spacing: 0.3px;
   }
 
   /* ── Elements ── */
+  .w-sep {
+    border: none;
+    border-top: 1px solid rgba(255,255,255,0.06);
+    margin: 10px 0 8px;
+    position: relative;
+  }
+  .w-sep[data-label]:not([data-label=""])::before {
+    content: attr(data-label);
+    position: absolute;
+    top: 50%; left: 0;
+    transform: translateY(-50%);
+    padding-right: 10px;
+    background: rgba(10,10,20,0.97);
+    font-size: 9px;
+    font-weight: 700;
+    letter-spacing: 2px;
+    color: rgba(255,255,255,0.22);
+    text-transform: uppercase;
+  }
+
   .w-toggle-row {
     display: flex;
     align-items: center;
     justify-content: space-between;
-    padding: 5px 0;
+    padding: 5px 2px;
   }
-  .w-toggle-label { font-size: 12px; color: rgba(255,255,255,0.65); }
+  .w-toggle-label { font-size: 12px; color: rgba(255,255,255,0.62); }
 
   .w-toggle { position: relative; width: 36px; height: 20px; flex-shrink: 0; }
   .w-toggle input { display: none; }
-  .w-toggle-track {
+  .w-track {
     position: absolute; inset: 0;
     background: rgba(255,255,255,0.1);
     border-radius: 10px;
-    border: 1px solid rgba(255,255,255,0.08);
+    border: 1px solid rgba(255,255,255,0.07);
     cursor: pointer;
     transition: background 0.2s;
   }
-  .w-toggle-track::after {
+  .w-track::after {
     content: '';
     position: absolute;
     top: 3px; left: 3px;
     width: 12px; height: 12px;
-    background: rgba(255,255,255,0.4);
+    background: rgba(255,255,255,0.35);
     border-radius: 50%;
     transition: transform 0.2s, background 0.2s;
   }
-  .w-toggle input:checked + .w-toggle-track { background: rgba(167,139,250,0.35); border-color: rgba(167,139,250,0.4); }
-  .w-toggle input:checked + .w-toggle-track::after { transform: translateX(16px); background: #a78bfa; }
+  .w-toggle input:checked + .w-track { background: rgba(139,92,246,0.4); border-color: rgba(139,92,246,0.5); }
+  .w-toggle input:checked + .w-track::after { transform: translateX(16px); background: #a78bfa; }
 
   .w-slider-row {
     display: flex;
     align-items: center;
-    padding: 5px 0;
+    padding: 5px 2px;
     gap: 10px;
   }
-  .w-slider-label { font-size: 12px; color: rgba(255,255,255,0.65); flex-shrink: 0; }
-  .w-slider-val { font-size: 11px; color: rgba(255,255,255,0.4); width: 30px; text-align: right; flex-shrink: 0; }
+  .w-slider-label { font-size: 12px; color: rgba(255,255,255,0.62); flex-shrink: 0; }
+  .w-slider-val { font-size: 11px; color: rgba(255,255,255,0.35); width: 28px; text-align: right; flex-shrink: 0; }
   .w-slider-wrap { flex: 1; }
   input[type=range] {
     -webkit-appearance: none;
@@ -179,57 +213,37 @@
   input[type=range]::-webkit-slider-thumb {
     -webkit-appearance: none;
     width: 12px; height: 12px;
-    background: #a78bfa;
+    background: #8b5cf6;
     border-radius: 50%;
-    box-shadow: 0 0 6px rgba(167,139,250,0.6);
+    box-shadow: 0 0 6px rgba(139,92,246,0.7);
   }
 
   .w-btn {
     width: 100%;
     padding: 8px 12px;
     background: rgba(255,255,255,0.04);
-    border: 1px solid rgba(255,255,255,0.08);
+    border: 1px solid rgba(255,255,255,0.07);
     border-radius: 4px;
-    color: rgba(255,255,255,0.6);
+    color: rgba(255,255,255,0.55);
     font-size: 12px;
     font-family: inherit;
     cursor: pointer;
-    transition: background 0.15s, border-color 0.15s, color 0.15s;
+    transition: background 0.12s, border-color 0.12s, color 0.12s;
     text-align: center;
     margin: 3px 0;
     display: block;
   }
-  .w-btn:hover { background: rgba(255,255,255,0.08); border-color: rgba(255,255,255,0.15); color: #fff; }
-
-  .w-sep {
-    border: none;
-    border-top: 1px solid rgba(255,255,255,0.06);
-    margin: 10px 0;
-    position: relative;
-  }
-  .w-sep[data-label]::before {
-    content: attr(data-label);
-    position: absolute;
-    top: 50%; left: 0;
-    transform: translateY(-50%);
-    background: rgba(10,10,18,0.93);
-    padding-right: 10px;
-    font-size: 9px;
-    font-weight: 700;
-    letter-spacing: 2px;
-    color: rgba(255,255,255,0.25);
-    text-transform: uppercase;
-  }
+  .w-btn:hover { background: rgba(255,255,255,0.08); border-color: rgba(255,255,255,0.14); color: #fff; }
 
   /* Toast */
   #toast {
     position: fixed;
-    bottom: 30px; left: 50%;
-    transform: translateX(-50%) translateY(20px);
-    background: rgba(167,139,250,0.15);
-    border: 1px solid rgba(167,139,250,0.3);
+    bottom: 28px; left: 50%;
+    transform: translateX(-50%) translateY(16px);
+    background: rgba(139,92,246,0.18);
+    border: 1px solid rgba(139,92,246,0.35);
     color: #c4b5fd;
-    padding: 8px 20px;
+    padding: 7px 18px;
     border-radius: 4px;
     font-size: 12px;
     opacity: 0;
@@ -247,239 +261,196 @@
 <div id="toast"></div>
 
 <div id="menu">
-  <div id="stars-container" style="position:absolute;inset:0;pointer-events:none;overflow:hidden;"></div>
-  <div id="sidebar">
-    <div class="sidebar-logo">WAVE</div>
-  </div>
+  <div id="stars-wrap"></div>
+  <div id="sidebar"><div class="logo">W A V E</div></div>
   <div id="content"></div>
 </div>
 
 <script>
 // ── Stars ──────────────────────────────────────────────────────────────────
-(function() {
-  const c = document.getElementById('stars-container');
-  for (let i = 0; i < 45; i++) {
+(function(){
+  const w = document.getElementById('stars-wrap');
+  for(let i=0;i<50;i++){
     const s = document.createElement('div');
-    s.className = 'star';
-    s.style.cssText = `left:${Math.random()*100}%;top:${Math.random()*100}%;--dur:${2+Math.random()*4}s;--delay:${Math.random()*5}s`;
-    c.appendChild(s);
+    s.className='star';
+    s.style.cssText=`left:${Math.random()*100}%;top:${Math.random()*100}%;--dur:${2+Math.random()*5}s;--delay:${Math.random()*6}s`;
+    w.appendChild(s);
   }
 })();
 
 // ── State ──────────────────────────────────────────────────────────────────
-const pages    = {};   // pageId -> { label, el (content div) }
-const sidebarEl = document.getElementById('sidebar');
-const contentEl = document.getElementById('content');
-let   activePage = null;
-let   toastTimer = null;
+const pages     = {};   // id -> { navEl, pageEl }
+const sidebar   = document.getElementById('sidebar');
+const content   = document.getElementById('content');
+let   active    = null;
+let   toastTmr  = null;
 
-// ── Helpers ────────────────────────────────────────────────────────────────
-function showToast(msg) {
-  const t = document.getElementById('toast');
-  t.textContent = msg;
-  t.classList.add('show');
-  clearTimeout(toastTimer);
-  toastTimer = setTimeout(() => t.classList.remove('show'), 2200);
-}
+// ── Page helpers ───────────────────────────────────────────────────────────
+function getOrMakePage(id) {
+  if (pages[id]) return pages[id];
 
-function getOrCreatePage(pageId) {
-  if (pages[pageId]) return pages[pageId];
-
-  // Sidebar nav item
   const nav = document.createElement('div');
-  nav.className = 'sidebar-item';
-  nav.textContent = pageId;
-  nav.dataset.page = pageId;
-  nav.addEventListener('click', () => switchPage(pageId));
-  sidebarEl.appendChild(nav);
+  nav.className = 'nav-item';
+  nav.textContent = id;
+  nav.addEventListener('click', () => switchPage(id));
+  sidebar.appendChild(nav);
 
-  // Content page
-  const div = document.createElement('div');
-  div.className = 'page';
-  div.id = 'page-' + pageId;
+  const pg = document.createElement('div');
+  pg.className = 'page';
 
   const title = document.createElement('div');
   title.className = 'page-title';
-  title.textContent = pageId;
-  div.appendChild(title);
+  title.textContent = id;
+  pg.appendChild(title);
 
-  contentEl.appendChild(div);
+  content.appendChild(pg);
 
-  const entry = { label: pageId, navEl: nav, el: div };
-  pages[pageId] = entry;
+  const entry = { navEl: nav, pageEl: pg };
+  pages[id] = entry;
 
-  // Auto-activate first page
-  if (!activePage) switchPage(pageId);
+  // Auto-show the very first page
+  if (!active) switchPage(id);
 
   return entry;
 }
 
-function switchPage(pageId) {
-  document.querySelectorAll('.sidebar-item').forEach(i => i.classList.remove('active'));
-  document.querySelectorAll('.page').forEach(p => p.classList.remove('active'));
-  const entry = pages[pageId];
-  if (!entry) return;
-  entry.navEl.classList.add('active');
-  entry.el.classList.add('active');
-  activePage = pageId;
+function switchPage(id) {
+  Object.values(pages).forEach(p => {
+    p.navEl.classList.remove('active');
+    p.pageEl.classList.remove('active');
+  });
+  const e = pages[id];
+  if (!e) return;
+  e.navEl.classList.add('active');
+  e.pageEl.classList.add('active');
+  active = id;
 }
 
-// ── Wave API (called from Lua via postMessage) ─────────────────────────────
-const Wave = {
-
-  // Wave.CreatePage("Self Options")
-  CreatePage: function(pageId) {
-    getOrCreatePage(pageId);
-  },
-
-  // Wave.CreateToggle("NoClip", "Self Options", callbackId, initialState)
-  CreateToggle: function(label, pageId, callbackId, initialState) {
-    const page = getOrCreatePage(pageId);
-
-    const row = document.createElement('div');
-    row.className = 'w-toggle-row';
-
-    const lbl = document.createElement('span');
-    lbl.className = 'w-toggle-label';
-    lbl.textContent = label;
-
-    const tog = document.createElement('label');
-    tog.className = 'w-toggle';
-
-    const inp = document.createElement('input');
-    inp.type = 'checkbox';
-    inp.checked = !!initialState;
-
-    const track = document.createElement('span');
-    track.className = 'w-toggle-track';
-
-    inp.addEventListener('change', () => {
-      sendToLua({ type: 'callback', callbackId: callbackId, value: inp.checked });
-    });
-
-    tog.appendChild(inp);
-    tog.appendChild(track);
-    row.appendChild(lbl);
-    row.appendChild(tog);
-    page.el.appendChild(row);
-  },
-
-  // Wave.CreateSlider("Speed", "Self Options", callbackId, min, max, default)
-  CreateSlider: function(label, pageId, callbackId, min, max, def) {
-    const page = getOrCreatePage(pageId);
-
-    const row = document.createElement('div');
-    row.className = 'w-slider-row';
-
-    const lbl = document.createElement('span');
-    lbl.className = 'w-slider-label';
-    lbl.textContent = label;
-
-    const valEl = document.createElement('span');
-    valEl.className = 'w-slider-val';
-    valEl.textContent = def;
-
-    const wrap = document.createElement('div');
-    wrap.className = 'w-slider-wrap';
-
-    const inp = document.createElement('input');
-    inp.type = 'range';
-    inp.min = min; inp.max = max; inp.value = def;
-
-    inp.addEventListener('input', () => {
-      valEl.textContent = inp.value;
-      sendToLua({ type: 'callback', callbackId: callbackId, value: parseFloat(inp.value) });
-    });
-
-    wrap.appendChild(inp);
-    row.appendChild(lbl);
-    row.appendChild(valEl);
-    row.appendChild(wrap);
-    page.el.appendChild(row);
-  },
-
-  // Wave.CreateButton("Heal", "Self Options", callbackId)
-  CreateButton: function(label, pageId, callbackId) {
-    const page = getOrCreatePage(pageId);
-
-    const btn = document.createElement('button');
-    btn.className = 'w-btn';
-    btn.textContent = label;
-    btn.addEventListener('click', () => {
-      sendToLua({ type: 'callback', callbackId: callbackId, value: true });
-    });
-    page.el.appendChild(btn);
-  },
-
-  // Wave.CreateSeparator("Health", "Self Options")
-  CreateSeparator: function(label, pageId) {
-    const page = getOrCreatePage(pageId);
-    const hr = document.createElement('hr');
-    hr.className = 'w-sep';
-    if (label) hr.dataset.label = label;
-    page.el.appendChild(hr);
-  },
-};
-
-// ── Callback -> Lua bridge ─────────────────────────────────────────────────
-// The Lua side listens for NUI callbacks; we fire them via sendNuiMessage pattern
-// Since this is a DUI (not NUI), we communicate back via a registered resource fetch
-function sendToLua(data) {
-  // Macho DUI has no built-in back-channel, so we use a fetch to a registered endpoint
-  // Your Lua resource should register: SetNuiFocus / AddEventHandler for these
-  // OR: use MachoExecuteDuiScript polling approach (check _waveCallbackQueue)
-  if (!window._waveCallbackQueue) window._waveCallbackQueue = [];
-  window._waveCallbackQueue.push(data);
-  // Also try standard FiveM NUI callback if available
-  if (typeof fetch !== 'undefined') {
-    fetch('https://wave/callback', {
-      method: 'POST',
-      headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify(data)
-    }).catch(() => {});
-  }
+function showToast(msg) {
+  const t = document.getElementById('toast');
+  t.textContent = msg;
+  t.classList.add('show');
+  clearTimeout(toastTmr);
+  toastTmr = setTimeout(() => t.classList.remove('show'), 2200);
 }
 
 // ── Cursor ─────────────────────────────────────────────────────────────────
 const cursor = document.getElementById('cursor');
 
-// ── Message handler (from Lua via MachoSendDuiMessage) ────────────────────
+// ── Message handler ────────────────────────────────────────────────────────
 window.addEventListener('message', function(e) {
   const d = e.data;
   if (!d || !d.type) return;
 
-  switch (d.type) {
+  switch(d.type) {
 
-    // Input events
     case 'mouseMove':
       cursor.style.left = d.x + 'px';
       cursor.style.top  = d.y + 'px';
       break;
 
-    case 'click':
+    case 'click': {
       cursor.classList.add('clicking');
       setTimeout(() => cursor.classList.remove('clicking'), 120);
       const el = document.elementFromPoint(d.x, d.y);
       if (el) el.click();
       break;
+    }
 
-    // UI builder calls from Lua
-    case 'CreatePage':      Wave.CreatePage(d.pageId); break;
-    case 'CreateToggle':    Wave.CreateToggle(d.label, d.pageId, d.callbackId, d.state); break;
-    case 'CreateSlider':    Wave.CreateSlider(d.label, d.pageId, d.callbackId, d.min, d.max, d.default); break;
-    case 'CreateButton':    Wave.CreateButton(d.label, d.pageId, d.callbackId); break;
-    case 'CreateSeparator': Wave.CreateSeparator(d.label, d.pageId); break;
-
-    // Toggle state sync from Lua
-    case 'SetToggle':
-      // Update a specific toggle by callbackId
+    case 'CreatePage':
+      getOrMakePage(d.pageId);
       break;
+
+    case 'CreateToggle': {
+      const pg = getOrMakePage(d.pageId);
+      const row = document.createElement('div');
+      row.className = 'w-toggle-row';
+
+      const lbl = document.createElement('span');
+      lbl.className = 'w-toggle-label';
+      lbl.textContent = d.label;
+
+      const tog = document.createElement('label');
+      tog.className = 'w-toggle';
+
+      const inp = document.createElement('input');
+      inp.type = 'checkbox';
+      inp.checked = !!d.state;
+
+      const track = document.createElement('span');
+      track.className = 'w-track';
+
+      inp.addEventListener('change', () => queueCallback(d.callbackId, inp.checked));
+
+      tog.appendChild(inp);
+      tog.appendChild(track);
+      row.appendChild(lbl);
+      row.appendChild(tog);
+      pg.pageEl.appendChild(row);
+      break;
+    }
+
+    case 'CreateSlider': {
+      const pg = getOrMakePage(d.pageId);
+      const row = document.createElement('div');
+      row.className = 'w-slider-row';
+
+      const lbl = document.createElement('span');
+      lbl.className = 'w-slider-label';
+      lbl.textContent = d.label;
+
+      const valEl = document.createElement('span');
+      valEl.className = 'w-slider-val';
+      valEl.textContent = d.default;
+
+      const wrap = document.createElement('div');
+      wrap.className = 'w-slider-wrap';
+
+      const inp = document.createElement('input');
+      inp.type='range'; inp.min=d.min; inp.max=d.max; inp.value=d.default;
+      inp.addEventListener('input', () => {
+        valEl.textContent = inp.value;
+        queueCallback(d.callbackId, parseFloat(inp.value));
+      });
+
+      wrap.appendChild(inp);
+      row.appendChild(lbl);
+      row.appendChild(valEl);
+      row.appendChild(wrap);
+      pg.pageEl.appendChild(row);
+      break;
+    }
+
+    case 'CreateButton': {
+      const pg = getOrMakePage(d.pageId);
+      const btn = document.createElement('button');
+      btn.className = 'w-btn';
+      btn.textContent = d.label;
+      btn.addEventListener('click', () => queueCallback(d.callbackId, true));
+      pg.pageEl.appendChild(btn);
+      break;
+    }
+
+    case 'CreateSeparator': {
+      const pg = getOrMakePage(d.pageId);
+      const hr = document.createElement('hr');
+      hr.className = 'w-sep';
+      if (d.label) hr.dataset.label = d.label;
+      pg.pageEl.appendChild(hr);
+      break;
+    }
 
     case 'Toast':
       showToast(d.message);
       break;
   }
 });
+
+// ── Callback queue (polled by Lua) ─────────────────────────────────────────
+window._waveCallbackQueue = [];
+function queueCallback(id, value) {
+  window._waveCallbackQueue.push({ type: 'callback', callbackId: id, value: value });
+}
 </script>
 </body>
 </html>
