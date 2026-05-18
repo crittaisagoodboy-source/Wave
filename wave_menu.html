@@ -7,9 +7,7 @@
   *, *::before, *::after { margin: 0; padding: 0; box-sizing: border-box; }
 
   html, body {
-    width: 100vw;
-    height: 100vh;
-    /* FULLY transparent so game shows through */
+    width: 100vw; height: 100vh;
     background: transparent !important;
     font-family: 'Segoe UI', sans-serif;
     overflow: hidden;
@@ -33,7 +31,6 @@
     background: #a78bfa;
   }
 
-  /* The menu box itself has the dark background */
   #menu {
     position: absolute;
     top: 50%; left: 50%;
@@ -47,7 +44,6 @@
     overflow: hidden;
   }
 
-  /* stars only inside the menu */
   #stars-wrap {
     position: absolute; inset: 0;
     pointer-events: none;
@@ -63,7 +59,6 @@
   }
   @keyframes twinkle { 0%,100%{opacity:.1} 50%{opacity:.8} }
 
-  /* ── Sidebar ── */
   #sidebar {
     width: 160px;
     flex-shrink: 0;
@@ -119,7 +114,6 @@
     border-radius: 0 2px 2px 0;
   }
 
-  /* ── Content ── */
   #content {
     flex: 1;
     padding: 22px 24px;
@@ -142,7 +136,6 @@
     letter-spacing: 0.3px;
   }
 
-  /* ── Elements ── */
   .w-sep {
     border: none;
     border-top: 1px solid rgba(255,255,255,0.06);
@@ -232,10 +225,13 @@
     text-align: center;
     margin: 3px 0;
     display: block;
+    line-height: 1.4;
+    position: relative;
+    z-index: 2;
   }
   .w-btn:hover { background: rgba(255,255,255,0.08); border-color: rgba(255,255,255,0.14); color: #fff; }
+  .w-btn.pressed { background: rgba(139,92,246,0.15); border-color: rgba(139,92,246,0.35); color: #c4b5fd; }
 
-  /* Toast */
   #toast {
     position: fixed;
     bottom: 28px; left: 50%;
@@ -267,32 +263,37 @@
 </div>
 
 <script>
+// ── MUST be first — Lua polls this before anything else runs ───────────────
+window._waveCallbackQueue = [];
+function queueCallback(id, value) {
+  window._waveCallbackQueue.push({ type: 'callback', callbackId: id, value: value });
+}
+
 // ── Stars ──────────────────────────────────────────────────────────────────
 (function(){
   const w = document.getElementById('stars-wrap');
   for(let i=0;i<50;i++){
     const s = document.createElement('div');
     s.className='star';
-    s.style.cssText=`left:${Math.random()*100}%;top:${Math.random()*100}%;--dur:${2+Math.random()*5}s;--delay:${Math.random()*6}s`;
+    s.style.cssText='left:'+Math.random()*100+'%;top:'+Math.random()*100+'%;--dur:'+(2+Math.random()*5)+'s;--delay:'+Math.random()*6+'s';
     w.appendChild(s);
   }
 })();
 
 // ── State ──────────────────────────────────────────────────────────────────
-const pages     = {};   // id -> { navEl, pageEl }
-const sidebar   = document.getElementById('sidebar');
-const content   = document.getElementById('content');
-let   active    = null;
-let   toastTmr  = null;
+const pages   = {};
+const sidebar = document.getElementById('sidebar');
+const content = document.getElementById('content');
+let   active  = null;
+let   toastTmr = null;
 
-// ── Page helpers ───────────────────────────────────────────────────────────
 function getOrMakePage(id) {
   if (pages[id]) return pages[id];
 
   const nav = document.createElement('div');
   nav.className = 'nav-item';
   nav.textContent = id;
-  nav.addEventListener('click', () => switchPage(id));
+  nav.addEventListener('click', function(){ switchPage(id); });
   sidebar.appendChild(nav);
 
   const pg = document.createElement('div');
@@ -308,18 +309,18 @@ function getOrMakePage(id) {
   const entry = { navEl: nav, pageEl: pg };
   pages[id] = entry;
 
-  // Auto-show the very first page
   if (!active) switchPage(id);
 
   return entry;
 }
 
 function switchPage(id) {
-  Object.values(pages).forEach(p => {
-    p.navEl.classList.remove('active');
-    p.pageEl.classList.remove('active');
-  });
-  const e = pages[id];
+  var keys = Object.keys(pages);
+  for (var i = 0; i < keys.length; i++) {
+    pages[keys[i]].navEl.classList.remove('active');
+    pages[keys[i]].pageEl.classList.remove('active');
+  }
+  var e = pages[id];
   if (!e) return;
   e.navEl.classList.add('active');
   e.pageEl.classList.add('active');
@@ -327,130 +328,126 @@ function switchPage(id) {
 }
 
 function showToast(msg) {
-  const t = document.getElementById('toast');
+  var t = document.getElementById('toast');
   t.textContent = msg;
   t.classList.add('show');
   clearTimeout(toastTmr);
-  toastTmr = setTimeout(() => t.classList.remove('show'), 2200);
+  toastTmr = setTimeout(function(){ t.classList.remove('show'); }, 2200);
 }
 
-// ── Cursor ─────────────────────────────────────────────────────────────────
 const cursor = document.getElementById('cursor');
 
 // ── Message handler ────────────────────────────────────────────────────────
 window.addEventListener('message', function(e) {
-  const d = e.data;
+  var d = e.data;
   if (!d || !d.type) return;
 
-  switch(d.type) {
+  if (d.type === 'mouseMove') {
+    cursor.style.left = d.x + 'px';
+    cursor.style.top  = d.y + 'px';
 
-    case 'mouseMove':
-      cursor.style.left = d.x + 'px';
-      cursor.style.top  = d.y + 'px';
-      break;
-
-    case 'click': {
-      cursor.classList.add('clicking');
-      setTimeout(() => cursor.classList.remove('clicking'), 120);
-      const el = document.elementFromPoint(d.x, d.y);
-      if (el) el.click();
-      break;
+  } else if (d.type === 'click') {
+    cursor.classList.add('clicking');
+    setTimeout(function(){ cursor.classList.remove('clicking'); }, 120);
+    var el = document.elementFromPoint(d.x, d.y);
+    if (el) {
+      el.dispatchEvent(new MouseEvent('click', { bubbles: true, cancelable: true }));
     }
 
-    case 'CreatePage':
-      getOrMakePage(d.pageId);
-      break;
+  } else if (d.type === 'CreatePage') {
+    getOrMakePage(d.pageId);
 
-    case 'CreateToggle': {
-      const pg = getOrMakePage(d.pageId);
-      const row = document.createElement('div');
-      row.className = 'w-toggle-row';
+  } else if (d.type === 'CreateToggle') {
+    var pg = getOrMakePage(d.pageId);
+    var row = document.createElement('div');
+    row.className = 'w-toggle-row';
 
-      const lbl = document.createElement('span');
-      lbl.className = 'w-toggle-label';
-      lbl.textContent = d.label;
+    var lbl = document.createElement('span');
+    lbl.className = 'w-toggle-label';
+    lbl.textContent = d.label;
 
-      const tog = document.createElement('label');
-      tog.className = 'w-toggle';
+    var tog = document.createElement('label');
+    tog.className = 'w-toggle';
 
-      const inp = document.createElement('input');
-      inp.type = 'checkbox';
-      inp.checked = !!d.state;
+    var inp = document.createElement('input');
+    inp.type = 'checkbox';
+    inp.checked = !!d.state;
 
-      const track = document.createElement('span');
-      track.className = 'w-track';
+    var track = document.createElement('span');
+    track.className = 'w-track';
 
-      inp.addEventListener('change', () => queueCallback(d.callbackId, inp.checked));
+    (function(cbId, input){
+      input.addEventListener('change', function(){ queueCallback(cbId, input.checked); });
+    })(d.callbackId, inp);
 
-      tog.appendChild(inp);
-      tog.appendChild(track);
-      row.appendChild(lbl);
-      row.appendChild(tog);
-      pg.pageEl.appendChild(row);
-      break;
-    }
+    tog.appendChild(inp);
+    tog.appendChild(track);
+    row.appendChild(lbl);
+    row.appendChild(tog);
+    pg.pageEl.appendChild(row);
 
-    case 'CreateSlider': {
-      const pg = getOrMakePage(d.pageId);
-      const row = document.createElement('div');
-      row.className = 'w-slider-row';
+  } else if (d.type === 'CreateSlider') {
+    var pg = getOrMakePage(d.pageId);
+    var row = document.createElement('div');
+    row.className = 'w-slider-row';
 
-      const lbl = document.createElement('span');
-      lbl.className = 'w-slider-label';
-      lbl.textContent = d.label;
+    var lbl = document.createElement('span');
+    lbl.className = 'w-slider-label';
+    lbl.textContent = d.label;
 
-      const valEl = document.createElement('span');
-      valEl.className = 'w-slider-val';
-      valEl.textContent = d.default;
+    var valEl = document.createElement('span');
+    valEl.className = 'w-slider-val';
+    valEl.textContent = d['default'];
 
-      const wrap = document.createElement('div');
-      wrap.className = 'w-slider-wrap';
+    var wrap = document.createElement('div');
+    wrap.className = 'w-slider-wrap';
 
-      const inp = document.createElement('input');
-      inp.type='range'; inp.min=d.min; inp.max=d.max; inp.value=d.default;
-      inp.addEventListener('input', () => {
-        valEl.textContent = inp.value;
-        queueCallback(d.callbackId, parseFloat(inp.value));
+    var inp = document.createElement('input');
+    inp.type = 'range';
+    inp.min = d.min;
+    inp.max = d.max;
+    inp.value = d['default'];
+
+    (function(cbId, input, display){
+      input.addEventListener('input', function(){
+        display.textContent = input.value;
+        queueCallback(cbId, parseFloat(input.value));
       });
+    })(d.callbackId, inp, valEl);
 
-      wrap.appendChild(inp);
-      row.appendChild(lbl);
-      row.appendChild(valEl);
-      row.appendChild(wrap);
-      pg.pageEl.appendChild(row);
-      break;
-    }
+    wrap.appendChild(inp);
+    row.appendChild(lbl);
+    row.appendChild(valEl);
+    row.appendChild(wrap);
+    pg.pageEl.appendChild(row);
 
-    case 'CreateButton': {
-      const pg = getOrMakePage(d.pageId);
-      const btn = document.createElement('button');
-      btn.className = 'w-btn';
-      btn.textContent = d.label;
-      btn.addEventListener('click', () => queueCallback(d.callbackId, true));
-      pg.pageEl.appendChild(btn);
-      break;
-    }
+  } else if (d.type === 'CreateButton') {
+    var pg = getOrMakePage(d.pageId);
+    var btn = document.createElement('div');
+    btn.className = 'w-btn';
+    btn.textContent = d.label;
 
-    case 'CreateSeparator': {
-      const pg = getOrMakePage(d.pageId);
-      const hr = document.createElement('hr');
-      hr.className = 'w-sep';
-      if (d.label) hr.dataset.label = d.label;
-      pg.pageEl.appendChild(hr);
-      break;
-    }
+    (function(cbId, el){
+      el.addEventListener('click', function(){
+        el.classList.add('pressed');
+        setTimeout(function(){ el.classList.remove('pressed'); }, 150);
+        queueCallback(cbId, true);
+      });
+    })(d.callbackId, btn);
 
-    case 'Toast':
-      showToast(d.message);
-      break;
+    pg.pageEl.appendChild(btn);
+
+  } else if (d.type === 'CreateSeparator') {
+    var pg = getOrMakePage(d.pageId);
+    var hr = document.createElement('hr');
+    hr.className = 'w-sep';
+    if (d.label) hr.dataset.label = d.label;
+    pg.pageEl.appendChild(hr);
+
+  } else if (d.type === 'Toast') {
+    showToast(d.message);
   }
 });
-
-// ── Callback queue (polled by Lua) ─────────────────────────────────────────
-window._waveCallbackQueue = [];
-function queueCallback(id, value) {
-  window._waveCallbackQueue.push({ type: 'callback', callbackId: id, value: value });
-}
 </script>
 </body>
 </html>
