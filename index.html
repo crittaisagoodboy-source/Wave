@@ -210,9 +210,11 @@ document.addEventListener('keydown', (e) => {
     else if (e.key.toLowerCase() === 'q') { e.preventDefault(); currentTabIndex = (currentTabIndex - 1 + tabButtons.length) % tabButtons.length; updateTabHighlight(currentTabIndex); }
     return;
   }
-  if (e.key === 'ArrowDown') { e.preventDefault(); currentIndex = (currentIndex + 1) % buttons.length; updateHighlight(currentIndex); }
-  else if (e.key === 'ArrowUp') { e.preventDefault(); currentIndex = (currentIndex - 1 + buttons.length) % buttons.length; updateHighlight(currentIndex); }
-  else if (e.key === 'Enter') { e.preventDefault(); buttons[currentIndex]?.click(); }
+if (data.type === 'key') {
+    if (data.key === 'ArrowDown') { currentIndex = (currentIndex + 1) % buttons.length; updateHighlight(currentIndex); }
+    else if (data.key === 'ArrowUp') { currentIndex = (currentIndex - 1 + buttons.length) % buttons.length; updateHighlight(currentIndex); }
+    else if (data.key === 'Enter') { buttons[currentIndex]?.click(); }
+}
   else if (e.key.toLowerCase() === 'e') { e.preventDefault(); currentTabIndex = (currentTabIndex + 1) % tabButtons.length; updateTabHighlight(currentTabIndex); }
   else if (e.key.toLowerCase() === 'q') { e.preventDefault(); currentTabIndex = (currentTabIndex - 1 + tabButtons.length) % tabButtons.length; updateTabHighlight(currentTabIndex); }
 });
