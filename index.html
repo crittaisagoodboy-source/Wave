@@ -206,17 +206,31 @@ document.addEventListener('keydown', (e) => {
   if (isSettingsTab) {
     if (e.key === 'ArrowLeft') { e.preventDefault(); applyFont(fontIndex - 1); }
     else if (e.key === 'ArrowRight') { e.preventDefault(); applyFont(fontIndex + 1); }
-    else if (e.key.toLowerCase() === 'e') { e.preventDefault(); currentTabIndex = (currentTabIndex + 1) % tabButtons.length; updateTabHighlight(currentTabIndex); }
-    else if (e.key.toLowerCase() === 'q') { e.preventDefault(); currentTabIndex = (currentTabIndex - 1 + tabButtons.length) % tabButtons.length; updateTabHighlight(currentTabIndex); }
+    else if (e.key.toLowerCase() === 'e') {
+      e.preventDefault();
+      currentTabIndex = (currentTabIndex + 1) % tabButtons.length;
+      updateTabHighlight(currentTabIndex);
+    }
+    else if (e.key.toLowerCase() === 'q') {
+      e.preventDefault();
+      currentTabIndex = (currentTabIndex - 1 + tabButtons.length) % tabButtons.length;
+      updateTabHighlight(currentTabIndex);
+    }
     return;
   }
-if (data.type === 'key') {
-    if (data.key === 'ArrowDown') { currentIndex = (currentIndex + 1) % buttons.length; updateHighlight(currentIndex); }
-    else if (data.key === 'ArrowUp') { currentIndex = (currentIndex - 1 + buttons.length) % buttons.length; updateHighlight(currentIndex); }
-    else if (data.key === 'Enter') { buttons[currentIndex]?.click(); }
-}
-  else if (e.key.toLowerCase() === 'e') { e.preventDefault(); currentTabIndex = (currentTabIndex + 1) % tabButtons.length; updateTabHighlight(currentTabIndex); }
-  else if (e.key.toLowerCase() === 'q') { e.preventDefault(); currentTabIndex = (currentTabIndex - 1 + tabButtons.length) % tabButtons.length; updateTabHighlight(currentTabIndex); }
+
+  // normal menu navigation (keyboard)
+  if (e.key === 'ArrowDown') {
+    currentIndex = (currentIndex + 1) % buttons.length;
+    updateHighlight(currentIndex);
+  }
+  else if (e.key === 'ArrowUp') {
+    currentIndex = (currentIndex - 1 + buttons.length) % buttons.length;
+    updateHighlight(currentIndex);
+  }
+  else if (e.key === 'Enter') {
+    buttons[currentIndex]?.click();
+  }
 });
 
 // MachoSendDuiMessage handler
