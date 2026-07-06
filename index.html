@@ -226,32 +226,38 @@ if (data.type === 'key') {
 window.addEventListener("message", (e) => {
     const msg = e.data;
 
-    if (msg === "scrollUp") {
-        const active = isSettingsTab ? settingsContainer : tabContainer;
-        active.scrollTop -= 40;
-        updateScrollThumb();
-    }
+    console.log("Received:", msg);
 
-    if (msg === "scrollDown") {
-        const active = isSettingsTab ? settingsContainer : tabContainer;
-        active.scrollTop += 40;
-        updateScrollThumb();
-    }
+    const active = isSettingsTab ? settingsContainer : tabContainer;
 
-    if (msg === "enter") {
-        buttons[currentIndex]?.click();
-    }
+    switch (msg) {
+        case "scrollUp":
+            currentIndex = Math.max(0, currentIndex - 1);
+            updateHighlight(currentIndex);
+            break;
 
-    if (msg === "tabLeft") {
-        currentTabIndex = (currentTabIndex - 1 + tabButtons.length) % tabButtons.length;
-        updateTabHighlight(currentTabIndex);
-    }
+        case "scrollDown":
+            currentIndex = Math.min(buttons.length - 1, currentIndex + 1);
+            updateHighlight(currentIndex);
+            break;
 
-    if (msg === "tabRight") {
-        currentTabIndex = (currentTabIndex + 1) % tabButtons.length;
-        updateTabHighlight(currentTabIndex);
+        case "enter":
+            buttons[currentIndex]?.click();
+            break;
+
+        case "tabLeft":
+            currentTabIndex = (currentTabIndex - 1 + tabButtons.length) % tabButtons.length;
+            updateTabHighlight(currentTabIndex);
+            break;
+
+        case "tabRight":
+            currentTabIndex = (currentTabIndex + 1) % tabButtons.length;
+            updateTabHighlight(currentTabIndex);
+            break;
     }
 });
+
+ 
 window.addEventListener("message", (e) => {
     alert("Received: " + JSON.stringify(e.data));
     console.log("Received:", e.data);
