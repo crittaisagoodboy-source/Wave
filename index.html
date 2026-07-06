@@ -223,23 +223,33 @@ if (data.type === 'key') {
 // Usage: MachoSendDuiMessage(dui, '{"type":"scroll","direction":"up"}')
 //        MachoSendDuiMessage(dui, '{"type":"scroll","direction":"down"}')
 //        MachoSendDuiMessage(dui, '{"type":"scroll","direction":"up","amount":80}')   -- optional custom px amount
-window.addEventListener('message', (e) => {
-  let data;
-  try {
-    data = typeof e.data === 'string' ? JSON.parse(e.data) : e.data;
-  } catch { return; }
+window.addEventListener("message", (e) => {
+    const msg = e.data;
 
-  if (!data || data.type !== 'scroll') return;
+    if (msg === "scrollUp") {
+        const active = isSettingsTab ? settingsContainer : tabContainer;
+        active.scrollTop -= 40;
+        updateScrollThumb();
+    }
 
-  const active = isSettingsTab ? settingsContainer : tabContainer;
-  const amount = typeof data.amount === 'number' ? data.amount : 40;
+    if (msg === "scrollDown") {
+        const active = isSettingsTab ? settingsContainer : tabContainer;
+        active.scrollTop += 40;
+        updateScrollThumb();
+    }
 
-  if (data.direction === 'up') {
-    active.scrollTop = Math.max(0, active.scrollTop - amount);
-    updateScrollThumb();
-  } else if (data.direction === 'down') {
-    active.scrollTop = Math.min(active.scrollHeight - active.clientHeight, active.scrollTop + amount);
-    updateScrollThumb();
-  }
+    if (msg === "enter") {
+        buttons[currentIndex]?.click();
+    }
+
+    if (msg === "tabLeft") {
+        currentTabIndex = (currentTabIndex - 1 + tabButtons.length) % tabButtons.length;
+        updateTabHighlight(currentTabIndex);
+    }
+
+    if (msg === "tabRight") {
+        currentTabIndex = (currentTabIndex + 1) % tabButtons.length;
+        updateTabHighlight(currentTabIndex);
+    }
 });
 </script>
