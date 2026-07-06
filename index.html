@@ -233,26 +233,22 @@ document.addEventListener('keydown', (e) => {
   }
 });
 
-// MachoSendDuiMessage handler
-// Usage: MachoSendDuiMessage(dui, '{"type":"scroll","direction":"up"}')
-//        MachoSendDuiMessage(dui, '{"type":"scroll","direction":"down"}')
-//        MachoSendDuiMessage(dui, '{"type":"scroll","direction":"up","amount":80}')   -- optional custom px amount
-window.addEventListener("message", (e) => {
-    const msg = e.data;
+window.addEventListener("message", (event) => {
+    const msg = event.data;
 
     console.log("Received:", msg);
-
-    const active = isSettingsTab ? settingsContainer : tabContainer;
 
     switch (msg) {
         case "scrollUp":
             currentIndex = Math.max(0, currentIndex - 1);
             updateHighlight(currentIndex);
+            buttons[currentIndex]?.scrollIntoView({ block: "center" });
             break;
 
         case "scrollDown":
             currentIndex = Math.min(buttons.length - 1, currentIndex + 1);
             updateHighlight(currentIndex);
+            buttons[currentIndex]?.scrollIntoView({ block: "center" });
             break;
 
         case "enter":
