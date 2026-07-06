@@ -252,4 +252,9 @@ window.addEventListener("message", (e) => {
         updateTabHighlight(currentTabIndex);
     }
 });
+window.addEventListener("message", (e) => {
+    alert("Received: " + JSON.stringify(e.data));
+    console.log("Received:", e.data);
+});
+ 
 </script>
