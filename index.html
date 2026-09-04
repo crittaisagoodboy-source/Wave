@@ -488,6 +488,18 @@
       if (window.parent && window.parent !== window) window.parent.postMessage(message, "*");
     }
 
+    function emitActionMessage(action, payload) {
+      const message = {
+        source: "wave-ui",
+        type: "wave_ui_event",
+        action,
+        ...payload
+      };
+      window.WaveUI && (window.WaveUI.lastActionMessage = message);
+      window.dispatchEvent(new CustomEvent("wave:ui:event", { detail: message }));
+      if (window.parent && window.parent !== window) window.parent.postMessage(message, "*");
+    }
+
     /* Public browser API. Lua can call the same operations by sending the
        corresponding JSON messages through redENGINE.DUI.SendMessage. */
     let uiReady = false;
@@ -565,7 +577,9 @@
           toggle.classList.toggle("on", button.toggle);
           toggle.setAttribute("aria-label", button.toggle ? "On" : "Off");
         }
-        emitWaveEvent("toggleChanged", { page: page.label, id: button.id, label: button.label, value: button.toggle });
+        const eventPayload = { page: page.label, id: button.id, label: button.label, value: button.toggle };
+        emitWaveEvent("toggleChanged", eventPayload);
+        emitActionMessage("toggle", eventPayload);
         return true;
       },
       scroll(direction) {
@@ -592,6 +606,35 @@
         mainItems.splice(0, mainItems.length);
         render();
         return true;
+      },
+      bootstrap(config) {
+        const value = config || {};
+        pageStack = [];
+        activeTab = 0;
+        selected = 0;
+        smoothY = 0;
+        targetY = 0;
+        mainItems.splice(0, mainItems.length);
+
+        (Array.isArray(value.pages) ? value.pages : []).forEach((rawPage, pageIndex) => {
+          const page = normaliseEntry(rawPage, rawPage.label || `Page ${pageIndex + 1}`);
+          page.children = [];
+          page.tooltip = rawPage.tooltip || "";
+          (Array.isArray(rawPage.tabs) ? rawPage.tabs : []).forEach((rawTab, tabIndex) => {
+            const tab = normaliseEntry(rawTab, rawTab.label || `Tab ${tabIndex + 1}`);
+            tab.buttons = [];
+            (Array.isArray(rawTab.buttons) ? rawTab.buttons : []).forEach((rawButton, buttonIndex) => {
+              const button = normaliseEntry(rawButton, rawButton.label || `Button ${buttonIndex + 1}`);
+              if (Object.prototype.hasOwnProperty.call(button, "toggle")) button.toggleX = button.toggle ? 15 : 0;
+              tab.buttons.push(button);
+            });
+            page.children.push(tab);
+          });
+          mainItems.push(page);
+        });
+
+        render();
+        return true;
       }
     };
 
@@ -616,6 +659,7 @@
         else if (type === "setselection") { selected = Math.max(0, Math.min(currentItems().length - 1, Number(data.index || 1) - 1)); updateSelectionVisuals(); }
         else if (type === "clearpageitems") WaveUI.clearPageItems(data.pageId || data.page);
         else if (type === "clearpages") WaveUI.clearPages();
+        else if (type === "bootstrap" || type === "loadconfig") WaveUI.bootstrap(data.config || data);
         else return;
         emitWaveEvent("messageHandled", { action: type });
       } catch (error) {
@@ -736,9 +780,13 @@
           toggle.classList.toggle("on", item.toggle);
           toggle.setAttribute("aria-label", item.toggle ? "On" : "Off");
         }
-        emitWaveEvent("toggleChanged", { page: currentPage()?.label || "Main", id: item.id, label: item.label, value: item.toggle });
+        const eventPayload = { page: currentPage()?.label || "Main", id: item.id, label: item.label, value: item.toggle };
+        emitWaveEvent("toggleChanged", eventPayload);
+        emitActionMessage("toggle", eventPayload);
       } else {
-        emitWaveEvent("buttonPressed", { page: currentPage()?.label || "Main", id: item.id, label: item.label });
+        const eventPayload = { page: currentPage()?.label || "Main", id: item.id, label: item.label };
+        emitWaveEvent("buttonPressed", eventPayload);
+        emitActionMessage("button", eventPayload);
       }
       tooltip.textContent = currentPage()?.tooltip || item.desc;
     }
@@ -831,7 +879,7 @@
     render();
     uiReady = true;
     pendingUiMessages.splice(0).forEach(message => handleDuiMessage({ data: message }));
-    emitWaveEvent("ready", { api: ["createButton", "createToggle", "createPage", "createTopTab", "setToolTipForPage", "openPage", "scroll", "clearPageItems", "clearPages"] });
+    emitWaveEvent("ready", { api: ["createButton", "createToggle", "createPage", "createTopTab", "setToolTipForPage", "openPage", "scroll", "clearPageItems", "clearPages", "bootstrap"], eventType: "wave_ui_event" });
     requestAnimationFrame(animateSelection);
   </script>
 </body>
