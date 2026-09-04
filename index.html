@@ -1,288 +1,769 @@
-
-<link href="https://fonts.googleapis.com/css2?family=Poppins:wght@400;500;600;700&family=Inter:wght@400;500;600&family=Rajdhani:wght@500;600;700&family=Nunito:wght@400;600;700&family=Exo+2:wght@400;600;700&display=swap" rel="stylesheet">
-<style>
-  * { box-sizing: border-box; }
-  #solarisWrap { font-family: 'Poppins', system-ui, sans-serif; width: 480px; margin: 0 auto; display: flex; flex-direction: row; gap: 0; }
-  #solarisWrap button, #solarisWrap span { font-family: inherit; }
-  #outerScrollTrack { width: 5px; background: rgba(255,255,255,0.04); border-radius: 3px; position: relative; flex-shrink: 0; margin-right: 5px; cursor: pointer; }
-  #outerScrollThumb {
-    position: absolute; left: 0.5px; width: 4px; border-radius: 2px;
-    background: linear-gradient(180deg, rgba(120,210,255,0.95) 0%, rgba(41,182,246,1) 20%, rgba(20,120,220,1) 45%, rgba(13,71,161,1) 55%, rgba(30,136,229,1) 75%, rgba(79,195,247,1) 90%, rgba(120,210,255,0.95) 100%);
-    background-size: 100% 300%; animation: scrollWave 3s ease-in-out infinite;
-    box-shadow: 0 0 5px rgba(41,182,246,0.8), 0 0 10px rgba(41,182,246,0.3);
-    cursor: grab;
-  }
-  #outerScrollThumb:active { cursor: grabbing; }
-  @keyframes scrollWave { 0% { background-position: 0% 0%; } 50% { background-position: 0% 100%; } 100% { background-position: 0% 0%; } }
-  #menuMain { flex: 1; background: rgba(10,10,10,0.88); border-radius: 5px; box-shadow: rgba(0,0,0,0.3) 0px 3px 18px; display: flex; flex-direction: column; overflow: hidden; }
-  #tabContainer { scrollbar-width: none; }
-  #tabContainer::-webkit-scrollbar { display: none; }
-  #settingsContainer { scrollbar-width: none; display: none; }
-  #settingsContainer::-webkit-scrollbar { display: none; }
-</style>
-
-<div id="solarisWrap">
-  <div id="outerScrollTrack"><div id="outerScrollThumb"></div></div>
-  <div id="menuMain">
-    <div style="width:100%;height:130px;flex-shrink:0;border-radius:4px 4px 0 0;overflow:hidden;">
-      <img src="https://media.discordapp.net/attachments/1067691279934300161/1519679654825299998/content.png?ex=6a3e6f77&is=6a3d1df7&hm=48846093937233861bbded27a6a41cfd68901aa440b2cb387d64195f58bd7735&=&format=webp&quality=lossless&width=1872&height=749" style="width:100%;height:100%;object-fit:cover;object-position:center;display:block;" alt="banner" />
-    </div>
-
-    <div id="tabBar" style="width:100%;background:rgba(0,0,0,0.9);display:flex;align-items:center;flex-shrink:0;border-bottom:1px solid rgba(41,182,246,0.4);padding:0;">
-      <button class="tab-button" data-tab-num="0" style="cursor:pointer;padding:11px 0;flex:1;border-bottom:3px solid rgba(41,182,246,0.85);background:transparent;border-top:none;border-left:none;border-right:none;color:white;font-weight:600;font-size:13px;transition:all 0.2s;">Main</button>
-      <button class="tab-button" data-tab-num="1" style="cursor:pointer;padding:11px 0;flex:1;opacity:0.55;background:transparent;border:none;color:white;font-weight:600;font-size:13px;transition:all 0.2s;">Settings</button>
-    </div>
-
-    <div style="position:relative;flex:1;display:flex;min-height:240px;">
-      <div id="tabContainer" role="listbox" style="position:relative;padding:2px 0 5px;outline:none;flex:1;overflow-y:scroll;">
-        <div id="highlight" style="position:absolute;left:3px;right:3px;height:40px;top:1px;background:rgba(10,40,80,0.6);box-shadow:rgba(41,182,246,0.7) 0px 0px 0px 1px inset,rgba(41,182,246,0.2) 0px 0px 5px 3px;border-radius:5px;pointer-events:none;z-index:1;transition:top 0.2s cubic-bezier(0.4,0,0.2,1);"></div>
-
-        <button data-tab="0" style="display:flex;justify-content:space-between;align-items:center;padding:9px 18px;color:white;font-weight:600;font-size:13px;min-height:40px;width:100%;margin:1px 0;position:relative;z-index:2;background:transparent;border:0;outline:none;cursor:pointer;text-align:left;">
-          <span style="display:flex;align-items:center;gap:10px;"><img src="https://leanmenu.cc/media/menu-imgs/Self_2.webp" style="width:18px;height:18px;opacity:0.9;filter:brightness(0) saturate(100%) invert(60%) sepia(80%) saturate(500%) hue-rotate(180deg) brightness(120%);" alt=""/><span>Self</span></span>
-          <svg width="9" height="8" viewBox="0 0 8 7" fill="none" style="stroke:rgba(100,200,255,0.8);stroke-width:1.2;stroke-linecap:round;stroke-linejoin:round;"><path d="M1 1l3 2.5L1 6"/><path d="M4 1l3 2.5L4 6"/></svg>
-        </button>
-        <button data-tab="1" style="display:flex;justify-content:space-between;align-items:center;padding:9px 18px;color:white;font-weight:600;font-size:13px;min-height:40px;width:100%;margin:1px 0;position:relative;z-index:2;background:transparent;border:0;outline:none;cursor:pointer;text-align:left;">
-          <span style="display:flex;align-items:center;gap:10px;"><img src="https://leanmenu.cc/media/menu-imgs/Online_2.webp" style="width:18px;height:18px;opacity:0.9;filter:brightness(0) saturate(100%) invert(60%) sepia(80%) saturate(500%) hue-rotate(180deg) brightness(120%);" alt=""/><span>Online</span></span>
-          <svg width="9" height="8" viewBox="0 0 8 7" fill="none" style="stroke:rgba(100,200,255,0.8);stroke-width:1.2;stroke-linecap:round;stroke-linejoin:round;"><path d="M1 1l3 2.5L1 6"/><path d="M4 1l3 2.5L4 6"/></svg>
-        </button>
-        <button data-tab="2" style="display:flex;justify-content:space-between;align-items:center;padding:9px 18px;color:white;font-weight:600;font-size:13px;min-height:40px;width:100%;margin:1px 0;position:relative;z-index:2;background:transparent;border:0;outline:none;cursor:pointer;text-align:left;">
-          <span style="display:flex;align-items:center;gap:10px;"><img src="https://leanmenu.cc/media/menu-imgs/Combat_Weapons_2.webp" style="width:18px;height:18px;opacity:0.9;filter:brightness(0) saturate(100%) invert(60%) sepia(80%) saturate(500%) hue-rotate(180deg) brightness(120%);" alt=""/><span>Combat</span></span>
-          <svg width="9" height="8" viewBox="0 0 8 7" fill="none" style="stroke:rgba(100,200,255,0.8);stroke-width:1.2;stroke-linecap:round;stroke-linejoin:round;"><path d="M1 1l3 2.5L1 6"/><path d="M4 1l3 2.5L4 6"/></svg>
-        </button>
-        <button data-tab="3" style="display:flex;justify-content:space-between;align-items:center;padding:9px 18px;color:white;font-weight:600;font-size:13px;min-height:40px;width:100%;margin:1px 0;position:relative;z-index:2;background:transparent;border:0;outline:none;cursor:pointer;text-align:left;">
-          <span style="display:flex;align-items:center;gap:10px;"><img src="https://leanmenu.cc/media/menu-imgs/Visual_2.webp" style="width:18px;height:18px;opacity:0.9;filter:brightness(0) saturate(100%) invert(60%) sepia(80%) saturate(500%) hue-rotate(180deg) brightness(120%);" alt=""/><span>Weapon</span></span>
-          <svg width="9" height="8" viewBox="0 0 8 7" fill="none" style="stroke:rgba(100,200,255,0.8);stroke-width:1.2;stroke-linecap:round;stroke-linejoin:round;"><path d="M1 1l3 2.5L1 6"/><path d="M4 1l3 2.5L4 6"/></svg>
-        </button>
-        <button data-tab="4" style="display:flex;justify-content:space-between;align-items:center;padding:9px 18px;color:white;font-weight:600;font-size:13px;min-height:40px;width:100%;margin:1px 0;position:relative;z-index:2;background:transparent;border:0;outline:none;cursor:pointer;text-align:left;">
-          <span style="display:flex;align-items:center;gap:10px;"><img src="https://leanmenu.cc/media/menu-imgs/Vehicle_2.webp" style="width:18px;height:18px;opacity:0.9;filter:brightness(0) saturate(100%) invert(60%) sepia(80%) saturate(500%) hue-rotate(180deg) brightness(120%);" alt=""/><span>Vehicle</span></span>
-          <svg width="9" height="8" viewBox="0 0 8 7" fill="none" style="stroke:rgba(100,200,255,0.8);stroke-width:1.2;stroke-linecap:round;stroke-linejoin:round;"><path d="M1 1l3 2.5L1 6"/><path d="M4 1l3 2.5L4 6"/></svg>
-        </button>
-        <button data-tab="5" style="display:flex;justify-content:space-between;align-items:center;padding:9px 18px;color:white;font-weight:600;font-size:13px;min-height:40px;width:100%;margin:1px 0;position:relative;z-index:2;background:transparent;border:0;outline:none;cursor:pointer;text-align:left;">
-          <span style="display:flex;align-items:center;gap:10px;"><img src="https://leanmenu.cc/media/menu-imgs/Miscellaneous_2.webp" style="width:18px;height:18px;opacity:0.9;filter:brightness(0) saturate(100%) invert(60%) sepia(80%) saturate(500%) hue-rotate(180deg) brightness(120%);" alt=""/><span>Exploits</span></span>
-          <svg width="9" height="8" viewBox="0 0 8 7" fill="none" style="stroke:rgba(100,200,255,0.8);stroke-width:1.2;stroke-linecap:round;stroke-linejoin:round;"><path d="M1 1l3 2.5L1 6"/><path d="M4 1l3 2.5L4 6"/></svg>
-        </button>
-        <button data-tab="6" style="display:flex;justify-content:space-between;align-items:center;padding:9px 18px;color:white;font-weight:600;font-size:13px;min-height:40px;width:100%;margin:1px 0;position:relative;z-index:2;background:transparent;border:0;outline:none;cursor:pointer;text-align:left;">
-          <span style="display:flex;align-items:center;gap:10px;"><img src="https://leanmenu.cc/media/menu-imgs/Destructive_2.webp" style="width:18px;height:18px;opacity:0.9;filter:brightness(0) saturate(100%) invert(60%) sepia(80%) saturate(500%) hue-rotate(180deg) brightness(120%);" alt=""/><span>Misc</span></span>
-          <svg width="9" height="8" viewBox="0 0 8 7" fill="none" style="stroke:rgba(100,200,255,0.8);stroke-width:1.2;stroke-linecap:round;stroke-linejoin:round;"><path d="M1 1l3 2.5L1 6"/><path d="M4 1l3 2.5L4 6"/></svg>
-        </button>
-        <button data-tab="7" style="display:flex;justify-content:space-between;align-items:center;padding:9px 18px;color:white;font-weight:600;font-size:13px;min-height:40px;width:100%;margin:1px 0;position:relative;z-index:2;background:transparent;border:0;outline:none;cursor:pointer;text-align:left;">
-          <span style="display:flex;align-items:center;gap:10px;"><img src="https://leanmenu.cc/media/menu-imgs/search_2.webp" style="width:18px;height:18px;opacity:0.9;filter:brightness(0) saturate(100%) invert(60%) sepia(80%) saturate(500%) hue-rotate(180deg) brightness(120%);" alt=""/><span>Search</span></span>
-        </button>
-      </div>
-
-      <div id="settingsContainer" style="flex:1;overflow-y:scroll;padding:2px 0 5px;scrollbar-width:none;">
-        <div style="display:flex;justify-content:space-between;align-items:center;padding:9px 18px;color:white;min-height:40px;width:100%;margin:1px 0;box-sizing:border-box;">
-          <span style="display:flex;align-items:center;gap:10px;font-weight:600;font-size:13px;">
-            <svg width="18" height="18" viewBox="0 0 24 24" fill="none" style="stroke:rgba(100,200,255,0.8);stroke-width:1.8;stroke-linecap:round;flex-shrink:0;"><path d="M4 7h16M4 12h16M4 17h10"/></svg>
-            <span>Font</span>
-          </span>
-          <div style="display:flex;align-items:center;gap:6px;">
-            <button id="fontPrev" onclick="changeFont(-1)" style="width:22px;height:22px;background:rgba(41,182,246,0.12);border:1px solid rgba(41,182,246,0.35);border-radius:4px;color:rgba(100,200,255,0.9);font-size:12px;cursor:pointer;display:flex;align-items:center;justify-content:center;padding:0;line-height:1;">&#8592;</button>
-            <span id="fontLabel" style="font-size:12px;font-weight:600;color:rgba(160,215,255,0.95);min-width:72px;text-align:center;letter-spacing:0.2px;">Poppins</span>
-            <button id="fontNext" onclick="changeFont(1)" style="width:22px;height:22px;background:rgba(41,182,246,0.12);border:1px solid rgba(41,182,246,0.35);border-radius:4px;color:rgba(100,200,255,0.9);font-size:12px;cursor:pointer;display:flex;align-items:center;justify-content:center;padding:0;line-height:1;">&#8594;</button>
-          </div>
-        </div>
-      </div>
-    </div>
-
-    <div style="border-top:1px solid rgba(41,182,246,0.15);background:rgba(0,0,0,0.6);display:flex;align-items:center;padding:0 12px;height:36px;gap:0;flex-shrink:0;">
-      <img src="https://i.postimg.cc/43HT8Kvz/d4330053-b7f5-4b50-ae60-41fa3a76832e-removebg-preview.png" style="width:25px;height:25px;object-fit:contain;flex-shrink:0;opacity:0.9;" alt="logo"/>
-      <div style="width:1px;height:18px;background:rgba(41,182,246,0.3);margin:0 8px;flex-shrink:0;"></div>
-      <span style="flex:1;text-align:center;color:rgba(160,215,255,0.88);font-size:12px;letter-spacing:0.3px;font-weight:500;">discord.gg/XfJrUV6pCb</span>
-      <div style="width:1px;height:18px;background:rgba(41,182,246,0.2);margin:0 8px;flex-shrink:0;"></div>
-      <span style="color:rgba(255,255,255,0.6);font-size:12px;">by mjh</span>
-    </div>
-  </div>
-</div>
-
-<script>
-const buttons = document.querySelectorAll('[data-tab]');
-const tabButtons = document.querySelectorAll('.tab-button');
-const highlight = document.getElementById('highlight');
-const tabContainer = document.getElementById('tabContainer');
-const settingsContainer = document.getElementById('settingsContainer');
-const outerTrack = document.getElementById('outerScrollTrack');
-const outerThumb = document.getElementById('outerScrollThumb');
-
-let currentIndex = 0, currentTabIndex = 0;
-let isSettingsTab = false;
-
-const fonts = [
-  { name: 'Poppins',  css: "'Poppins', sans-serif" },
-  { name: 'Inter',    css: "'Inter', sans-serif" },
-  { name: 'Rajdhani', css: "'Rajdhani', sans-serif" },
-  { name: 'Nunito',   css: "'Nunito', sans-serif" },
-  { name: 'Exo 2',    css: "'Exo 2', sans-serif" },
-];
-let fontIndex = 0;
-
-function applyFont(idx) {
-  fontIndex = (idx + fonts.length) % fonts.length;
-  const f = fonts[fontIndex];
-  document.getElementById('fontLabel').textContent = f.name;
-  document.getElementById('fontLabel').style.fontFamily = f.css;
-  document.getElementById('solarisWrap').style.fontFamily = f.css;
-  document.querySelectorAll('#solarisWrap button, #solarisWrap span').forEach(el => el.style.fontFamily = f.css);
-}
-
-window.changeFont = function(dir) { applyFont(fontIndex + dir); };
-
-function syncTrackHeight() {
-  outerTrack.style.height = document.getElementById('menuMain').offsetHeight + 'px';
-}
-
-function updateScrollThumb() {
-  const active = isSettingsTab ? settingsContainer : tabContainer;
-  const trackH = outerTrack.clientHeight;
-  const contentH = active.scrollHeight;
-  const visibleH = active.clientHeight;
-  if (contentH <= visibleH) { outerThumb.style.display = 'none'; return; }
-  outerThumb.style.display = 'block';
-  const thumbH = Math.max((visibleH / contentH) * trackH, 28);
-  const maxTop = trackH - thumbH;
-  outerThumb.style.height = thumbH + 'px';
-  outerThumb.style.top = ((active.scrollTop / (contentH - visibleH)) * maxTop) + 'px';
-}
-
-tabContainer.addEventListener('scroll', updateScrollThumb);
-settingsContainer.addEventListener('scroll', updateScrollThumb);
-window.addEventListener('resize', () => { syncTrackHeight(); updateScrollThumb(); });
-
-let isDragging = false, dragY = 0, dragScroll = 0;
-outerThumb.addEventListener('mousedown', (e) => {
-  isDragging = true; dragY = e.clientY;
-  dragScroll = (isSettingsTab ? settingsContainer : tabContainer).scrollTop;
-  e.preventDefault();
-});
-document.addEventListener('mousemove', (e) => {
-  if (!isDragging) return;
-  const active = isSettingsTab ? settingsContainer : tabContainer;
-  const trackH = outerTrack.clientHeight, contentH = active.scrollHeight, visibleH = active.clientHeight;
-  const thumbH = Math.max((visibleH / contentH) * trackH, 28);
-  active.scrollTop = dragScroll + ((e.clientY - dragY) / (trackH - thumbH)) * (contentH - visibleH);
-});
-document.addEventListener('mouseup', () => { isDragging = false; });
-
-outerTrack.addEventListener('click', (e) => {
-  if (e.target === outerThumb) return;
-  const active = isSettingsTab ? settingsContainer : tabContainer;
-  const r = outerTrack.getBoundingClientRect();
-  active.scrollTop = ((e.clientY - r.top) / r.height) * (active.scrollHeight - active.clientHeight);
-});
-
-function updateHighlight(i) {
-  const btn = buttons[i]; if (!btn) return;
-  highlight.style.top = (btn.offsetTop - 2) + 'px';
-  const bT = btn.offsetTop, bB = bT + btn.offsetHeight;
-  const cT = tabContainer.scrollTop, cH = tabContainer.clientHeight;
-  if (bT < cT) tabContainer.scrollTop = bT;
-  else if (bB > cT + cH) tabContainer.scrollTop = bB - cH;
-}
-
-    function moveDown() {
-    const container = isSettingsTab ? settingsContainer : tabContainer;
-
-    currentIndex = Math.min(buttons.length - 1, currentIndex + 1);
-    updateHighlight(currentIndex);
-
-    buttons[currentIndex]?.scrollIntoView({
-        block: "center",
-        behavior: "smooth"
-    });
-}
-
-function moveUp() {
-    const container = isSettingsTab ? settingsContainer : tabContainer;
-
-    currentIndex = Math.max(0, currentIndex - 1);
-    updateHighlight(currentIndex);
-
-    buttons[currentIndex]?.scrollIntoView({
-        block: "center",
-        behavior: "smooth"
-    });
-}
-
-function switchToTab(isSettings) {
-  isSettingsTab = isSettings;
-  tabContainer.style.display = isSettings ? 'none' : 'block';
-  settingsContainer.style.display = isSettings ? 'block' : 'none';
-  highlight.style.display = isSettings ? 'none' : 'block';
-  updateScrollThumb();
-}
-
-function updateTabHighlight(i) {
-  tabButtons.forEach((btn, idx) => {
-    btn.style.opacity = idx === i ? '1' : '0.55';
-    btn.style.borderBottom = idx === i ? '3px solid rgba(41,182,246,0.85)' : 'none';
-  });
-  switchToTab(i === 1);
-}
-
-buttons.forEach((btn, i) => btn.addEventListener('click', () => { currentIndex = i; updateHighlight(i); }));
-tabButtons.forEach((btn, i) => btn.addEventListener('click', () => { currentTabIndex = i; updateTabHighlight(i); }));
-
-buttons[0].click();
-updateTabHighlight(0);
-setTimeout(() => { syncTrackHeight(); updateScrollThumb(); }, 50);
-
-document.addEventListener('keydown', (e) => {
-  if (isSettingsTab) {
-    if (e.key === 'ArrowLeft') { e.preventDefault(); applyFont(fontIndex - 1); }
-    else if (e.key === 'ArrowRight') { e.preventDefault(); applyFont(fontIndex + 1); }
-    else if (e.key.toLowerCase() === 'e') {
-      e.preventDefault();
-      currentTabIndex = (currentTabIndex + 1) % tabButtons.length;
-      updateTabHighlight(currentTabIndex);
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>Wave — Main Menu</title>
+  <style>
+    :root {
+      --blue: #0788f4;
+      --blue-soft: #2aa1ff;
+      --panel: rgba(0, 3, 10, .93);
+      --text: #edf4ff;
     }
-    else if (e.key.toLowerCase() === 'q') {
-      e.preventDefault();
-      currentTabIndex = (currentTabIndex - 1 + tabButtons.length) % tabButtons.length;
-      updateTabHighlight(currentTabIndex);
+
+    * { box-sizing: border-box; }
+    html, body { width: 100%; height: 100%; }
+
+    body {
+      margin: 0;
+      overflow: hidden;
+      background: transparent;
+      color: var(--text);
+      font-family: "Trebuchet MS", "Segoe UI", Arial, sans-serif;
     }
-    return;
-  }
 
-  // normal menu navigation (keyboard)
-  if (e.key === 'ArrowDown') {
-    currentIndex = (currentIndex + 1) % buttons.length;
-    updateHighlight(currentIndex);
-  }
-  else if (e.key === 'ArrowUp') {
-    currentIndex = (currentIndex - 1 + buttons.length) % buttons.length;
-    updateHighlight(currentIndex);
-  }
-  else if (e.key === 'Enter') {
-    buttons[currentIndex]?.click();
-  }
-});
+    .scene {
+      position: relative;
+      width: 100%;
+      height: 100vh;
+      pointer-events: none;
+    }
 
-window.addEventListener('message', (e) => {
-  const msg = e.data;
-  console.log('Received:', msg);
-  
-  if (msg === 'down') {
-    const active = isSettingsTab ? settingsContainer : tabContainer;
-    active.scrollTop += 40;
-    updateScrollThumb();
-  } 
-  else if (msg === 'up') {
-    const active = isSettingsTab ? settingsContainer : tabContainer;
-    active.scrollTop -= 40;
-    updateScrollThumb();
-  }
-  else if (msg === 'enter') {
-    buttons[currentIndex]?.click();
-  }
-  else if (msg === 'tabLeft') {
-    currentTabIndex = (currentTabIndex - 1 + tabButtons.length) % tabButtons.length;
-    updateTabHighlight(currentTabIndex);
-  }
-  else if (msg === 'tabRight') {
-    currentTabIndex = (currentTabIndex + 1) % tabButtons.length;
-    updateTabHighlight(currentTabIndex);
-  }
-});
+    .menu-shell {
+      position: absolute;
+      top: 50%;
+      left: clamp(18px, 14vw, 190px);
+      width: min(62vw, 430px);
+      transform: translateY(-50%);
+      pointer-events: auto;
+      filter: drop-shadow(0 8px 13px rgba(0, 31, 100, .28));
+    }
 
- 
-</script>
+    /* Image slot only: replace the src with the final banner image. */
+    .banner-image {
+      display: block;
+      width: 100%;
+      height: 130px;
+      object-fit: cover;
+      border: 1px solid rgba(72, 164, 255, .72);
+      border-radius: 6px 6px 0 0;
+      background: #0788ef;
+    }
+
+    .tab-bar {
+      position: relative;
+      height: 35px;
+      display: flex;
+      align-items: stretch;
+      gap: 0;
+      padding: 0 8px;
+      background: rgba(0, 2, 8, .96);
+      border-bottom: 1px solid rgba(10, 122, 242, .66);
+      text-shadow: 0 1px 3px #000;
+    }
+
+    .tab-bar::after {
+      content: "";
+      position: absolute;
+      left: var(--tab-left, 0px);
+      bottom: -2px;
+      width: var(--tab-width, 108px);
+      height: 3px;
+      background: var(--blue);
+      box-shadow: 0 0 8px var(--blue);
+      transition: width .2s ease, left .2s ease;
+    }
+
+    .tab {
+      appearance: none;
+      border: 0;
+      min-width: 82px;
+      padding: 0 17px;
+      color: #8d9caf;
+      background: transparent;
+      font: inherit;
+      font-size: 13px;
+      cursor: pointer;
+      text-shadow: inherit;
+      white-space: nowrap;
+      transition: color .16s ease, background .16s ease;
+    }
+
+    .tab.active {
+      color: #f1f7ff;
+      background: linear-gradient(180deg, rgba(8, 113, 222, .62), rgba(5, 57, 125, .35));
+    }
+
+    .tab-separator {
+      width: 1px;
+      margin: 8px 0;
+      background: rgba(70, 104, 143, .28);
+    }
+
+    .menu-body {
+      position: relative;
+      padding: 4px 7px 5px 13px;
+      background: var(--panel);
+      border-left: 1px solid rgba(15, 112, 236, .4);
+      border-right: 1px solid rgba(15, 112, 236, .28);
+    }
+
+    /* Main keeps one stable height; child pages size exactly to their rows. */
+    .menu-body.main-view {
+      height: 342px;
+      overflow: hidden;
+    }
+
+    .menu-body.page-view {
+      min-height: 0;
+      overflow: hidden;
+    }
+
+    .page-intro {
+      position: relative;
+      z-index: 1;
+      padding: 8px 15px 7px;
+      color: #8799ae;
+      font-size: 11px;
+      line-height: 1.25;
+      border-bottom: 1px solid rgba(17, 90, 163, .3);
+      text-shadow: 0 1px 3px #000;
+    }
+
+    .page-intro strong {
+      display: block;
+      margin-bottom: 2px;
+      color: #e7f0fb;
+      font-size: 14px;
+      font-weight: 500;
+    }
+
+    .menu-body::before {
+      content: "";
+      position: absolute;
+      left: -3px;
+      top: 0;
+      bottom: 0;
+      width: 4px;
+      border-radius: 3px;
+      background: var(--blue);
+      box-shadow: 0 0 8px rgba(0, 139, 255, .78);
+    }
+
+    .selection-glider {
+      position: absolute;
+      z-index: 0;
+      top: 0;
+      left: 13px;
+      right: 7px;
+      height: 35px;
+      border: 1px solid #078cff;
+      border-radius: 5px;
+      background: linear-gradient(100deg, rgba(12, 105, 205, .95), rgba(12, 68, 137, .84));
+      box-shadow: inset 0 0 0 1px rgba(89, 184, 255, .24), 0 0 7px rgba(0, 119, 255, .25);
+      pointer-events: none;
+      will-change: transform;
+    }
+
+    .menu-item {
+      position: relative;
+      z-index: 1;
+      height: 35px;
+      display: flex;
+      align-items: center;
+      gap: 11px;
+      padding: 0 14px;
+      margin: 1px 0;
+      cursor: pointer;
+      color: #e7edf6;
+      font-size: 15px;
+      letter-spacing: .1px;
+      border: 1px solid transparent;
+      border-radius: 5px;
+      transition: background .15s ease, transform .15s ease;
+      text-shadow: 0 1px 3px #000;
+    }
+
+    .menu-item:hover { background: rgba(12, 79, 153, .42); transform: translateX(2px); }
+    .menu-item.selected { background: transparent; }
+
+    .menu-icon {
+      width: 17px;
+      height: 17px;
+      flex: 0 0 17px;
+      display: block;
+      object-fit: contain;
+      filter: brightness(0) invert(1) drop-shadow(0 1px 2px #000);
+    }
+
+    .chevron {
+      margin-left: auto;
+      color: #b7d4e9;
+      font-size: 22px;
+      font-weight: 300;
+      line-height: 1;
+      transform: translateY(-1px);
+    }
+
+    .menu-item.control {
+      cursor: pointer;
+    }
+
+    .control-toggle {
+      position: relative;
+      width: 31px;
+      height: 16px;
+      flex: 0 0 31px;
+      margin-left: auto;
+      border: 1px solid rgba(120, 156, 194, .58);
+      border-radius: 999px;
+      background: rgba(28, 45, 67, .85);
+      box-shadow: inset 0 1px 2px rgba(0,0,0,.55);
+      transition: background .28s ease, border-color .28s ease, box-shadow .28s ease;
+    }
+
+    .control-toggle::after {
+      content: "";
+      position: absolute;
+      top: 2px;
+      left: 2px;
+      width: 10px;
+      height: 10px;
+      border-radius: 50%;
+      background: #b9c7d6;
+      box-shadow: 0 1px 2px rgba(0,0,0,.7);
+      transform: translateX(var(--toggle-x, 0px));
+      will-change: transform;
+    }
+
+    .control-toggle.on {
+      border-color: #1598ff;
+      background: linear-gradient(90deg, #0879db, #0da9ff);
+      box-shadow: 0 0 6px rgba(0, 145, 255, .55), inset 0 0 4px rgba(255,255,255,.12);
+    }
+
+    .control-toggle.on::after {
+      background: #f4fbff;
+    }
+
+    .footer {
+      position: relative;
+      height: 25px;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      color: #cbd5e3;
+      font-size: 11px;
+      background: rgba(0, 2, 8, .95);
+      border-top: 1px solid var(--blue);
+      border-radius: 0 0 5px 5px;
+      text-shadow: 0 1px 3px #000;
+    }
+
+    .footer-logo {
+      position: absolute;
+      left: 10px;
+      width: 17px;
+      height: 12px;
+      filter: drop-shadow(0 0 3px rgba(0, 142, 255, .7));
+    }
+
+    .counter {
+      position: absolute;
+      right: 10px;
+      color: #c5d2e0;
+      font-size: 11px;
+    }
+
+    .tooltip {
+      width: 280px;
+      max-width: calc(100% - 24px);
+      min-height: 34px;
+      height: 34px;
+      margin: 6px auto 0;
+      padding: 7px 12px;
+      color: #cdd7e4;
+      text-align: center;
+      font-size: 11px;
+      line-height: 1.2;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      overflow: hidden;
+      background: rgba(2, 5, 11, .95);
+      border: 1px solid #087fff;
+      border-radius: 3px;
+      box-shadow: 0 0 0 1px rgba(0, 34, 102, .72), 0 5px 12px rgba(0,0,0,.22);
+    }
+
+    @media (max-width: 700px) {
+      .menu-shell { left: 18px; width: min(78vw, 430px); }
+    }
+
+    @media (max-width: 560px) {
+      .menu-shell { left: 12px; width: min(86vw, 430px); }
+      .banner-image { height: 116px; }
+      .menu-item { font-size: 14px; }
+    }
+  </style>
+</head>
+<body>
+  <main class="scene">
+    <section class="menu-shell" aria-label="Wave main menu">
+      <!-- Replace this placeholder image with the final banner image. -->
+      <img
+        class="banner-image"
+        alt="Wave banner placeholder"
+        src="data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='860' height='260' viewBox='0 0 860 260'%3E%3Crect width='860' height='260' fill='%230788ef'/%3E%3Ctext x='430' y='142' text-anchor='middle' fill='white' font-family='Arial' font-size='34' font-weight='bold'%3EBANNER IMAGE PLACEHOLDER%3C/text%3E%3C/svg%3E"
+      />
+
+      <nav class="tab-bar" id="tabBar" aria-label="Page tabs"></nav>
+      <div class="menu-body main-view" id="menuList"></div>
+      <div class="footer">
+        <svg class="footer-logo" viewBox="0 0 64 40" aria-label="Wave logo" role="img">
+          <path fill="#08a4ff" d="M2 30c14-17 24-27 39-27 8 0 15 3 21 9-9-3-16-2-22 2-11 7-15 18-26 18-4 0-8-1-12-2Z" />
+          <path fill="#075bea" d="M2 31c12 2 19 8 29 8 12 0 18-9 31-13-9 1-16 2-22 6-8 5-13 5-20 1-6-3-11-3-18-2Z" />
+        </svg>
+        <span>discord.gg/wave</span>
+        <span class="counter" id="counter">1/9</span>
+      </div>
+      <div class="tooltip" id="tooltip">Access self-related functions including movement, appearance, and abilities.</div>
+    </section>
+  </main>
+
+  <script>
+    const icons = {
+      player: "https://i.postimg.cc/wv2k46P4/icons8-person-64-(2).png",
+      vehicle: "https://i.postimg.cc/VLdF4PFq/icons8-car-24.png",
+      combat: "https://i.postimg.cc/MTf9Hkrd/gun-solid-(1).png",
+      online: "https://i.postimg.cc/L8hL2tWX/people-group-solid.png",
+      exploit: "https://i.postimg.cc/VkMsq5rR/icons8-coding-50.png",
+      visual: "https://i.postimg.cc/SxjT3z7d/eye-solid-(1).png",
+      misc: "https://i.postimg.cc/bNsq8PbC/icons8-more-50.png",
+      setting: "https://i.postimg.cc/prpRpdMw/icons8-settings-24.png"
+    };
+
+    const mainItems = [
+      { icon: icons.player, label: "Self", desc: "Access self-related functions including movement, appearance, and abilities.", children: [
+        { icon: icons.player, label: "Player", desc: "Player movement, health, armor, and appearance." },
+        { icon: icons.visual, label: "Appearance", desc: "Customize player model, outfit, and style." }
+      ] },
+      { icon: icons.online, label: "Online", desc: "Manage online players, sessions, and connected services.", children: [
+        { icon: icons.online, label: "Players", desc: "Browse and interact with online players." },
+        { icon: icons.misc, label: "Session", desc: "Session and lobby utilities." }
+      ] },
+      { icon: icons.misc, label: "Server", desc: "Server utilities, information, and administration tools.", children: [
+        { icon: icons.misc, label: "Information", desc: "View server details and status." },
+        { icon: icons.setting, label: "Administration", desc: "Server administration options." }
+      ] },
+      { icon: icons.misc, label: "Cloud", desc: "Cloud storage, synchronization, and account tools.", children: [
+        { icon: icons.misc, label: "Profiles", desc: "Manage saved profiles." },
+        { icon: icons.setting, label: "Sync", desc: "Synchronize settings and preferences." }
+      ] },
+      { icon: icons.combat, label: "Weapons / Combat", desc: "Configure weapons, combat behavior, and aim options.", children: [
+        { icon: icons.combat, label: "Weapons", desc: "Weapon configuration and loadouts." },
+        { icon: icons.combat, label: "Combat", desc: "Combat and aim preferences." }
+      ] },
+      { icon: icons.vehicle, label: "Vehicle", desc: "Vehicle controls, customization, and performance tools.", children: [
+        { icon: icons.vehicle, label: "Spawn", desc: "Spawn and manage vehicles." },
+        { icon: icons.setting, label: "Customize", desc: "Customize vehicle appearance and performance." }
+      ] },
+      { icon: icons.exploit, label: "Triggers", desc: "Create and manage automated gameplay triggers.", children: [
+        { icon: icons.exploit, label: "Events", desc: "Manage trigger events." },
+        { icon: icons.setting, label: "Automation", desc: "Configure automated actions." }
+      ] },
+      { icon: icons.setting, label: "Settings", desc: "Customize the menu, controls, colors, and preferences.", children: [
+        { icon: icons.setting, label: "Interface", desc: "Adjust menu display and layout." },
+        { icon: icons.setting, label: "Controls", desc: "Change keyboard controls." }
+      ] },
+      { icon: icons.misc, label: "Search", desc: "Search available features and tools quickly.", children: [
+        { icon: icons.misc, label: "Search Features", desc: "Find features by name." }
+      ] }
+    ];
+
+    /* The entries shown in the top tab strip are categories. These are the
+       actual controls shown inside each page. */
+    const actionSets = {
+      Player: [
+        { icon: icons.player, label: "Movement", desc: "Player movement options.", toggle: false },
+        { icon: icons.player, label: "Health", desc: "Health and armor options." },
+        { icon: icons.setting, label: "Abilities", desc: "Player ability options.", toggle: false }
+      ],
+      Appearance: [
+        { icon: icons.visual, label: "Model", desc: "Change the player model." },
+        { icon: icons.visual, label: "Outfit", desc: "Manage outfits and clothing.", toggle: false },
+        { icon: icons.setting, label: "Components", desc: "Edit player components and accessories." }
+      ]
+    };
+
+    mainItems.forEach((page, pageIndex) => {
+      page.id = page.id || page.label.toLowerCase().replace(/[^a-z0-9]+/g, "-");
+      page.children.forEach((tab, tabIndex) => {
+        tab.id = tab.id || `${page.id}-tab-${tabIndex + 1}`;
+        tab.buttons = actionSets[tab.label] || [
+          { id: `${tab.id}-overview`, icon: tab.icon, label: "Overview", desc: tab.desc },
+          { id: `${tab.id}-options`, icon: icons.setting, label: "Options", desc: `Configure ${tab.label.toLowerCase()} options.`, toggle: false }
+        ];
+        tab.buttons.forEach((button, buttonIndex) => {
+          button.id = button.id || `${tab.id}-button-${buttonIndex + 1}`;
+        });
+      });
+    });
+
+    const menuList = document.getElementById("menuList");
+    const tooltip = document.getElementById("tooltip");
+    const counter = document.getElementById("counter");
+    const tabBar = document.getElementById("tabBar");
+    let pageStack = [];
+    let activeTab = 0;
+    let selected = 0;
+    let smoothY = 0;
+    let targetY = 0;
+
+    function currentPage() {
+      return pageStack[pageStack.length - 1] || null;
+    }
+
+    function currentItems() {
+      if (!currentPage()) return mainItems;
+      const tab = currentPage().children[activeTab] || currentPage().children[0];
+      return tab?.buttons || [];
+    }
+
+    function currentTab() {
+      const page = currentPage();
+      return page ? (page.children[activeTab] || page.children[0]) : null;
+    }
+
+    function selectedItem() {
+      return currentItems()[selected] || currentItems()[0];
+    }
+
+    function idOf(value) {
+      return String(value || "").toLowerCase().replace(/[^a-z0-9]+/g, "-");
+    }
+
+    function findPage(ref) {
+      const wanted = typeof ref === "object" ? (ref.id || ref.label) : ref;
+      return mainItems.find(page => page.id === wanted || page.label === wanted || idOf(page.label) === idOf(wanted));
+    }
+
+    function findTab(page, ref) {
+      if (!page) return null;
+      const wanted = typeof ref === "object" ? (ref.id || ref.label) : ref;
+      return page.children.find(tab => tab.id === wanted || tab.label === wanted || idOf(tab.label) === idOf(wanted));
+    }
+
+    function ensureTab(page, ref) {
+      if (page.children.length === 0) {
+        page.children.push({ id: `${page.id}-tab-1`, label: page.label, icon: page.icon || icons.misc, desc: page.desc || "", buttons: [] });
+      }
+      return findTab(page, ref) || page.children[0];
+    }
+
+    function normaliseEntry(entry, fallbackLabel) {
+      const value = typeof entry === "string" ? { label: entry } : (entry || {});
+      return {
+        id: value.id || idOf(value.label || fallbackLabel),
+        label: value.label || fallbackLabel || "Item",
+        icon: value.icon || icons.misc,
+        desc: value.desc || value.tooltip || "",
+        ...(Object.prototype.hasOwnProperty.call(value, "toggle") ? { toggle: Boolean(value.toggle) } : {})
+      };
+    }
+
+    function emitWaveEvent(type, payload) {
+      const message = { source: "wave-ui", type, ...payload };
+      window.dispatchEvent(new CustomEvent("wave:ui", { detail: message }));
+      if (window.parent && window.parent !== window) window.parent.postMessage(message, "*");
+    }
+
+    /* Public browser API. Lua can call the same operations by sending the
+       corresponding JSON messages through redENGINE.DUI.SendMessage. */
+    let uiReady = false;
+    const pendingUiMessages = [];
+
+    window.WaveUI = {
+      createPage(page, label, description) {
+        const value = typeof page === "object" ? page : { id: page, label, desc: description };
+        const item = normaliseEntry(value, value.label || "Page");
+        item.children = [];
+        if (!findPage(item.id)) mainItems.push(item);
+        render();
+        return item.id;
+      },
+      createTopTab(pageRef, tab, description) {
+        const page = findPage(pageRef);
+        if (!page) return null;
+        const value = typeof tab === "object" ? tab : { id: tab, label: tab, desc: description };
+        const item = normaliseEntry(value, value.label || "Tab");
+        item.buttons = [];
+        page.children.push(item);
+        render();
+        return item.id;
+      },
+      createButton(pageRef, button, label, icon) {
+        const page = findPage(pageRef);
+        if (!page) return null;
+        const value = typeof button === "object" ? button : { id: button, label, icon };
+        const tab = ensureTab(page, value.tabId || value.tab || value.tabLabel);
+        const item = normaliseEntry(value, value.label || "Button");
+        tab.buttons.push(item);
+        render();
+        return item.id;
+      },
+      createToggle(pageRef, toggle, label, initial) {
+        const page = findPage(pageRef);
+        if (!page) return null;
+        const value = typeof toggle === "object" ? toggle : { id: toggle, label, toggle: initial };
+        const tab = ensureTab(page, value.tabId || value.tab || value.tabLabel);
+        const item = normaliseEntry({ ...value, toggle: Boolean(value.toggle ?? value.value ?? initial) }, value.label || "Toggle");
+        tab.buttons.push(item);
+        render();
+        return item.id;
+      },
+      setToolTipForPage(pageRef, text) {
+        const page = findPage(pageRef);
+        if (!page) return false;
+        page.tooltip = String(text || "");
+        if (currentPage() === page) render();
+        return true;
+      },
+      setToggle(pageRef, buttonRef, value) {
+        const page = findPage(pageRef);
+        if (!page) return false;
+        const button = page.children.flatMap(tab => tab.buttons || []).find(item => item.id === buttonRef || item.label === buttonRef);
+        if (!button || !Object.prototype.hasOwnProperty.call(button, "toggle")) return false;
+        button.toggle = Boolean(value);
+        render();
+        return true;
+      },
+      scroll(direction) {
+        const items = currentItems();
+        if (!items.length) return;
+        selected = (selected + Number(direction || 0) + items.length) % items.length;
+        render();
+      },
+      getState() {
+        return { page: currentPage()?.label || "Main", tab: currentTab()?.label || "Main", selected: selectedItem()?.label || null, index: selected + 1 };
+      }
+    };
+
+    function handleDuiMessage(event) {
+      const message = event?.data;
+      if (!message || typeof message !== "object") return;
+      if (!uiReady) {
+        pendingUiMessages.push(message);
+        return;
+      }
+      const type = String(message.type || message.action || "").replace(/^wave[:.]/i, "").toLowerCase();
+      const data = message.payload || message;
+      try {
+        if (type === "createpage") WaveUI.createPage(data.page || data);
+        else if (type === "createtoptab") WaveUI.createTopTab(data.pageId || data.page, data.tab || data);
+        else if (type === "createbutton") WaveUI.createButton(data.pageId || data.page, data.button || data);
+        else if (type === "createtoggle") WaveUI.createToggle(data.pageId || data.page, data.toggle || data);
+        else if (type === "settooltipforpage" || type === "settooltip") WaveUI.setToolTipForPage(data.pageId || data.page, data.text || data.tooltip || "");
+        else if (type === "settoggle") WaveUI.setToggle(data.pageId || data.page, data.buttonId || data.button, data.value);
+        else if (type === "scroll") WaveUI.scroll(Number(data.direction || data.amount || 0));
+        else if (type === "setselection") { selected = Math.max(0, Number(data.index || 1) - 1); render(); }
+        else return;
+        emitWaveEvent("messageHandled", { action: type });
+      } catch (error) {
+        emitWaveEvent("messageError", { action: type, error: String(error) });
+      }
+    }
+
+    window.addEventListener("message", handleDuiMessage);
+
+    function updateTabBar() {
+      tabBar.replaceChildren();
+      const tabs = currentPage() ? currentPage().children : [{ label: "Main" }];
+
+      tabs.forEach((child, index) => {
+        if (index > 0) {
+          const divider = document.createElement("span");
+          divider.className = "tab-separator";
+          tabBar.appendChild(divider);
+        }
+
+        const tab = document.createElement("button");
+        tab.className = "tab" + (index === (currentPage() ? activeTab : 0) ? " active" : "");
+        tab.textContent = child.label;
+        tab.addEventListener("click", () => {
+          if (!currentPage()) return;
+          activeTab = index;
+          selected = 0;
+          smoothY = 0;
+          targetY = 0;
+          render();
+        });
+        tabBar.appendChild(tab);
+      });
+
+      requestAnimationFrame(() => {
+        const active = tabBar.querySelector(".tab.active");
+        if (!active) return;
+        tabBar.style.setProperty("--tab-left", `${active.offsetLeft}px`);
+        tabBar.style.setProperty("--tab-width", `${active.offsetWidth}px`);
+      });
+    }
+
+    function moveGliderToSelection(immediate = false) {
+      const row = menuList.querySelectorAll(".menu-item")[selected];
+      if (!row) return;
+      targetY = row.offsetTop;
+      if (immediate) smoothY = targetY;
+      menuList.style.setProperty("--glider-y", `${smoothY}px`);
+    }
+
+    function render() {
+      const items = currentItems();
+      if (selected >= items.length) selected = Math.max(0, items.length - 1);
+      menuList.classList.toggle("main-view", pageStack.length === 0);
+      menuList.classList.toggle("page-view", pageStack.length > 0);
+      menuList.replaceChildren();
+
+      const glider = document.createElement("div");
+      glider.className = "selection-glider";
+      glider.style.transform = `translateY(${smoothY}px)`;
+      menuList.appendChild(glider);
+
+      items.forEach((item, index) => {
+        const isControl = pageStack.length > 0;
+        const row = document.createElement("div");
+        const isToggle = isControl && Object.prototype.hasOwnProperty.call(item, "toggle");
+        row.className = "menu-item" + (isControl ? " control" : "") + (index === selected ? " selected" : "");
+        row.innerHTML = `
+          <img class="menu-icon" src="${item.icon}" alt="">
+          <span>${item.label}</span>
+          ${isToggle ? `<span class="control-toggle${item.toggle ? " on" : ""}" aria-label="${item.toggle ? "On" : "Off"}"></span>` : (!isControl ? `<span class="chevron">›</span>` : "")}
+        `;
+        row.addEventListener("click", () => {
+          selected = index;
+          if (isControl) activateControl(item);
+          else render();
+        });
+        menuList.appendChild(row);
+      });
+
+      updateTabBar();
+      tooltip.textContent = currentPage()?.tooltip || selectedItem()?.desc || "";
+      counter.textContent = `${selected + 1}/${items.length}`;
+      requestAnimationFrame(() => {
+        if (pageStack.length > 0) smoothY = 0;
+        moveGliderToSelection(pageStack.length === 0 && selected === 0 && smoothY === 0);
+      });
+    }
+
+    function activateControl(item) {
+      if (!item || !pageStack.length) return;
+      if (Object.prototype.hasOwnProperty.call(item, "toggle")) {
+        item.toggle = !item.toggle;
+        const row = menuList.querySelectorAll(".menu-item")[selected];
+        const toggle = row?.querySelector(".control-toggle");
+        if (toggle) {
+          toggle.classList.toggle("on", item.toggle);
+          toggle.setAttribute("aria-label", item.toggle ? "On" : "Off");
+          /* The animation loop lerps --toggle-x instead of jumping it. */
+        }
+        emitWaveEvent("toggleChanged", { page: currentPage()?.label || "Main", id: item.id, label: item.label, value: item.toggle });
+      } else {
+        emitWaveEvent("buttonPressed", { page: currentPage()?.label || "Main", id: item.id, label: item.label });
+      }
+      tooltip.textContent = currentPage()?.tooltip || item.desc;
+    }
+
+    function enterPage() {
+      const item = selectedItem();
+      if (!item || !item.children?.length) return;
+      pageStack.push(item);
+      activeTab = 0;
+      selected = 0;
+      smoothY = 0;
+      targetY = 0;
+      render();
+    }
+
+    function goBack() {
+      if (!pageStack.length) return;
+      pageStack.pop();
+      activeTab = 0;
+      selected = 0;
+      smoothY = 0;
+      targetY = 0;
+      render();
+    }
+
+    function switchTab(direction) {
+      const page = currentPage();
+      if (!page || page.children.length < 2) return;
+      activeTab = (activeTab + direction + page.children.length) % page.children.length;
+      selected = 0;
+      smoothY = 0;
+      targetY = 0;
+      render();
+    }
+
+    function animateSelection() {
+      smoothY += (targetY - smoothY) * 0.18;
+      if (Math.abs(targetY - smoothY) < 0.08) smoothY = targetY;
+      const glider = menuList.querySelector(".selection-glider");
+      if (glider) glider.style.transform = `translateY(${smoothY}px)`;
+      menuList.querySelectorAll(".control-toggle").forEach((toggle, index) => {
+        const item = currentItems()[index];
+        if (item) {
+          const currentX = parseFloat(toggle.style.getPropertyValue("--toggle-x")) || 0;
+          const targetX = item.toggle ? 15 : 0;
+          const nextX = currentX + (targetX - currentX) * 0.2;
+          toggle.style.setProperty("--toggle-x", `${Math.abs(targetX - nextX) < 0.05 ? targetX : nextX}px`);
+        }
+      });
+      requestAnimationFrame(animateSelection);
+    }
+
+    document.addEventListener("keydown", event => {
+      const key = event.key.toLowerCase();
+      const items = currentItems();
+      if (event.key === "Backspace") {
+        goBack();
+        event.preventDefault();
+        return;
+      }
+      if (pageStack.length && key === "e") {
+        switchTab(1);
+        event.preventDefault();
+        return;
+      }
+      if (pageStack.length && key === "q") {
+        switchTab(-1);
+        event.preventDefault();
+        return;
+      }
+      if (event.key === "Enter") {
+        if (!pageStack.length) enterPage();
+        else activateControl(selectedItem());
+        event.preventDefault();
+        return;
+      }
+      if (event.key === "ArrowDown" || event.key === "ArrowRight") {
+        selected = (selected + 1) % items.length;
+        render();
+        event.preventDefault();
+      }
+      if (event.key === "ArrowUp" || event.key === "ArrowLeft") {
+        selected = (selected - 1 + items.length) % items.length;
+        render();
+        event.preventDefault();
+      }
+    });
+
+    render();
+    uiReady = true;
+    pendingUiMessages.splice(0).forEach(message => handleDuiMessage({ data: message }));
+    emitWaveEvent("ready", { api: ["createButton", "createToggle", "createPage", "createTopTab", "setToolTipForPage", "scroll"] });
+    requestAnimationFrame(animateSelection);
+  </script>
+</body>
+</html>
