@@ -140,25 +140,6 @@
       overflow-y: auto;
     }
 
-    .page-intro {
-      position: relative;
-      z-index: 1;
-      padding: 8px 15px 7px;
-      color: #8799ae;
-      font-size: 11px;
-      line-height: 1.25;
-      border-bottom: 1px solid rgba(17, 90, 163, .3);
-      text-shadow: 0 1px 3px #000;
-    }
-
-    .page-intro strong {
-      display: block;
-      margin-bottom: 2px;
-      color: #e7f0fb;
-      font-size: 14px;
-      font-weight: 500;
-    }
-
     .menu-body::before {
       content: "";
       position: absolute;
@@ -366,7 +347,13 @@
   </main>
 
   <script>
-    // Dynamic menu state
+    // ============================================
+    // COMPLETE REWRITE - Dynamic Menu System
+    // ============================================
+    
+    console.log("Wave Menu loaded - Dynamic Version");
+    
+    // State
     const state = {
       pages: [],
       pageStack: [],
@@ -374,56 +361,66 @@
       selected: 0,
       smoothY: 0,
       targetY: 0,
-      currentPage: null,
       ready: false
     };
-
-    // DOM elements
+    
+    // DOM refs
     const menuList = document.getElementById("menuList");
     const tooltip = document.getElementById("tooltip");
     const counter = document.getElementById("counter");
     const tabBar = document.getElementById("tabBar");
-
-    console.log("Wave Menu loaded");
-
-    // Helper functions
+    
+    // ============================================
+    // UTILITY FUNCTIONS
+    // ============================================
+    
     function normalizeId(str) {
       return String(str || "").toLowerCase().replace(/[^a-z0-9]+/g, "-");
     }
-
+    
     function findPage(ref) {
       const id = typeof ref === "object" ? (ref.id || ref.label) : ref;
-      return state.pages.find(p => p.id === id || p.label === id || normalizeId(p.label) === normalizeId(id));
+      const normalized = normalizeId(id);
+      return state.pages.find(p => 
+        p.id === id || 
+        p.label === id || 
+        normalizeId(p.id) === normalized ||
+        normalizeId(p.label) === normalized
+      );
     }
-
+    
     function findTab(page, ref) {
       if (!page) return null;
       const id = typeof ref === "object" ? (ref.id || ref.label) : ref;
-      return page.children.find(t => t.id === id || t.label === id || normalizeId(t.label) === normalizeId(id));
+      const normalized = normalizeId(id);
+      return page.children.find(t => 
+        t.id === id || 
+        t.label === id || 
+        normalizeId(t.id) === normalized ||
+        normalizeId(t.label) === normalized
+      );
     }
-
+    
     function getCurrentPage() {
       return state.pageStack[state.pageStack.length - 1] || null;
     }
-
+    
     function getCurrentItems() {
       const page = getCurrentPage();
       if (!page) return state.pages;
       const tab = page.children[state.activeTab] || page.children[0];
       return tab?.buttons || [];
     }
-
-    function getCurrentTab() {
-      const page = getCurrentPage();
-      return page ? (page.children[state.activeTab] || page.children[0]) : null;
-    }
-
+    
     function getSelectedItem() {
       const items = getCurrentItems();
-      return items[state.selected] || items[0] || null;
+      return items[state.selected] || null;
     }
-
-    // Send message to Lua
+    
+    // ============================================
+    // SEND TO LUA (via invokeNative)
+    // ============================================
+    
     function sendToLua(message) {
       const payload = {
         source: "wave-ui",
@@ -433,40 +430,33 @@
       const jsonStr = JSON.stringify(payload);
       console.log("Sending to Lua:", jsonStr);
       
-      // Method 1: Use invokeNative (redENGINE's preferred method)
+      // Use invokeNative for redENGINE
       if (typeof window.invokeNative === "function") {
         try {
           window.invokeNative("redui", jsonStr);
-          console.log("Sent via invokeNative");
           return;
         } catch (e) {
-          console.log("invokeNative failed:", e);
+          console.error("invokeNative failed:", e);
         }
       }
       
-      // Method 2: Use parent.postMessage
+      // Fallback to postMessage
       if (window.parent && window.parent !== window) {
         try {
           window.parent.postMessage(jsonStr, "*");
-          console.log("Sent via postMessage");
           return;
         } catch (e) {
-          console.log("postMessage failed:", e);
+          console.error("postMessage failed:", e);
         }
       }
-      
-      // Method 3: Use console (for debugging)
-      console.log("Could not send message to Lua");
     }
-
-    // Send ready signal
+    
     function sendReady() {
       console.log("Sending ready signal");
       sendToLua({ type: "ready" });
       state.ready = true;
     }
-
-    // Send toggle change
+    
     function sendToggleChange(page, id, label, value) {
       sendToLua({
         type: "toggleChanged",
@@ -476,8 +466,7 @@
         value: value
       });
     }
-
-    // Send button press
+    
     function sendButtonPress(page, id, label) {
       sendToLua({
         type: "buttonPressed",
@@ -486,30 +475,33 @@
         label: label
       });
     }
-
-    // Rendering functions
+    
+    // ============================================
+    // RENDERING FUNCTIONS
+    // ============================================
+    
     function renderTabBar() {
       tabBar.replaceChildren();
       const page = getCurrentPage();
       const tabs = page ? page.children : [{ label: "Main", id: "main" }];
-
+      
       if (!tabs || tabs.length === 0) {
-        const emptyTab = document.createElement("span");
-        emptyTab.className = "tab";
-        emptyTab.textContent = "No tabs";
-        tabBar.appendChild(emptyTab);
+        const span = document.createElement("span");
+        span.className = "tab";
+        span.textContent = "No tabs";
+        tabBar.appendChild(span);
         return;
       }
-
+      
       tabs.forEach((child, index) => {
         if (index > 0) {
           const divider = document.createElement("span");
           divider.className = "tab-separator";
           tabBar.appendChild(divider);
         }
-
+        
         const tab = document.createElement("button");
-        tab.className = "tab" + (index === (page ? state.activeTab : 0) ? " active" : "");
+        tab.className = "tab" + (index === state.activeTab ? " active" : "");
         tab.textContent = child.label || "Tab";
         tab.addEventListener("click", () => {
           if (!getCurrentPage()) return;
@@ -521,28 +513,28 @@
         });
         tabBar.appendChild(tab);
       });
-
+      
       requestAnimationFrame(() => {
         const active = tabBar.querySelector(".tab.active");
-        if (!active) return;
-        tabBar.style.setProperty("--tab-left", `${active.offsetLeft}px`);
-        tabBar.style.setProperty("--tab-width", `${active.offsetWidth}px`);
+        if (active) {
+          tabBar.style.setProperty("--tab-left", `${active.offsetLeft}px`);
+          tabBar.style.setProperty("--tab-width", `${active.offsetWidth}px`);
+        }
       });
     }
-
+    
     function renderMenuItems() {
       const items = getCurrentItems();
       const isControl = state.pageStack.length > 0;
       
-      // Clear existing items
       menuList.replaceChildren();
-
-      // Add glider
+      
+      // Glider
       const glider = document.createElement("div");
       glider.className = "selection-glider";
       glider.style.transform = `translateY(${state.smoothY}px)`;
       menuList.appendChild(glider);
-
+      
       if (!items || items.length === 0) {
         const empty = document.createElement("div");
         empty.className = "empty-state";
@@ -550,24 +542,29 @@
         menuList.appendChild(empty);
         return;
       }
-
+      
       items.forEach((item, index) => {
         const row = document.createElement("div");
-        const isToggle = isControl && Object.prototype.hasOwnProperty.call(item, "toggle");
+        const isToggle = isControl && item.toggle !== undefined;
         const toggleValue = isToggle ? (item.toggle || false) : false;
         
-        row.className = "menu-item" + (isControl ? " control" : "") + (index === state.selected ? " selected" : "");
+        row.className = "menu-item" + 
+          (isControl ? " control" : "") + 
+          (index === state.selected ? " selected" : "");
         
-        const iconHtml = isControl ? "" : `<img class="menu-icon" src="${item.icon || ''}" alt="">`;
-        const toggleHtml = isToggle ? 
-          `<span class="control-toggle${toggleValue ? " on" : ""}" style="--toggle-x:${toggleValue ? 15 : 0}px" aria-label="${toggleValue ? "On" : "Off"}"></span>` : 
-          (!isControl ? `<span class="chevron">›</span>` : "");
+        let html = '';
+        if (!isControl) {
+          html += `<img class="menu-icon" src="${item.icon || ''}" alt="">`;
+        }
+        html += `<span>${item.label || "Item"}</span>`;
         
-        row.innerHTML = `
-          ${iconHtml}
-          <span>${item.label || "Item"}</span>
-          ${toggleHtml}
-        `;
+        if (isToggle) {
+          html += `<span class="control-toggle${toggleValue ? " on" : ""}" style="--toggle-x:${toggleValue ? 15 : 0}px" aria-label="${toggleValue ? "On" : "Off"}"></span>`;
+        } else if (!isControl) {
+          html += `<span class="chevron">›</span>`;
+        }
+        
+        row.innerHTML = html;
         
         row.addEventListener("click", () => {
           state.selected = index;
@@ -581,7 +578,7 @@
         
         menuList.appendChild(row);
       });
-
+      
       // Update counter and tooltip
       const selected = getSelectedItem();
       if (selected) {
@@ -591,23 +588,20 @@
         counter.textContent = `0/${items.length}`;
       }
     }
-
+    
     function render() {
-      console.log("Rendering menu, pages:", state.pages.length);
+      console.log("Rendering, pages:", state.pages.length, "stack:", state.pageStack.length);
       renderTabBar();
       renderMenuItems();
       
       requestAnimationFrame(() => {
-        const glider = menuList.querySelector(".selection-glider");
-        if (glider) {
-          const targetRow = menuList.querySelectorAll(".menu-item")[state.selected];
-          if (targetRow) {
-            state.targetY = targetRow.offsetTop;
-          }
+        const targetRow = menuList.querySelectorAll(".menu-item")[state.selected];
+        if (targetRow) {
+          state.targetY = targetRow.offsetTop;
         }
       });
     }
-
+    
     function updateSelectionVisuals() {
       const rows = menuList.querySelectorAll(".menu-item");
       rows.forEach((row, index) => row.classList.toggle("selected", index === state.selected));
@@ -618,33 +612,30 @@
         const items = getCurrentItems();
         counter.textContent = `${state.selected + 1}/${items.length}`;
       }
-      
-      moveGliderToSelection(false);
     }
-
+    
     function moveGliderToSelection(immediate = false) {
       const row = menuList.querySelectorAll(".menu-item")[state.selected];
       if (!row) return;
       state.targetY = row.offsetTop;
       if (immediate) state.smoothY = state.targetY;
     }
-
+    
     function moveSelection(direction) {
       const items = getCurrentItems();
       if (!items || items.length === 0) return;
       state.selected = (state.selected + direction + items.length) % items.length;
       updateSelectionVisuals();
     }
-
+    
     function activateControl(item) {
       if (!item || !state.pageStack.length) return;
       
-      if (Object.prototype.hasOwnProperty.call(item, "toggle")) {
+      if (item.toggle !== undefined) {
         // Toggle
         item.toggle = !item.toggle;
         const toggleX = item.toggle ? 15 : 0;
         
-        // Update visual
         const row = menuList.querySelectorAll(".menu-item")[state.selected];
         const toggle = row?.querySelector(".control-toggle");
         if (toggle) {
@@ -653,22 +644,24 @@
           toggle.setAttribute("aria-label", item.toggle ? "On" : "Off");
         }
         
-        // Send to Lua
         const page = getCurrentPage();
         sendToggleChange(page?.label || "Main", item.id, item.label, item.toggle);
       } else {
-        // Button press
+        // Button
         const page = getCurrentPage();
         sendButtonPress(page?.label || "Main", item.id, item.label);
       }
     }
-
+    
     function enterPage(item) {
-      if (!item || !item.children || item.children.length === 0) {
-        // If no children, treat as button
+      if (!item) return;
+      
+      if (!item.children || item.children.length === 0) {
+        // No children, treat as button on main page
         sendButtonPress("Main", item.id, item.label);
         return;
       }
+      
       state.pageStack.push(item);
       state.activeTab = 0;
       state.selected = 0;
@@ -676,7 +669,7 @@
       state.targetY = 0;
       render();
     }
-
+    
     function goBack() {
       if (state.pageStack.length === 0) return;
       state.pageStack.pop();
@@ -686,7 +679,7 @@
       state.targetY = 0;
       render();
     }
-
+    
     function switchTab(direction) {
       const page = getCurrentPage();
       if (!page || page.children.length < 2) return;
@@ -696,7 +689,7 @@
       state.targetY = 0;
       render();
     }
-
+    
     function animateSelection() {
       state.smoothY += (state.targetY - state.smoothY) * 0.18;
       if (Math.abs(state.targetY - state.smoothY) < 0.08) state.smoothY = state.targetY;
@@ -704,85 +697,79 @@
       const glider = menuList.querySelector(".selection-glider");
       if (glider) glider.style.transform = `translateY(${state.smoothY}px)`;
       
-      // Animate toggle switches
-      menuList.querySelectorAll(".menu-item").forEach((row, index) => {
-        const items = getCurrentItems();
-        const item = items[index];
-        const toggle = row.querySelector(".control-toggle");
-        if (item && toggle && Object.prototype.hasOwnProperty.call(item, "toggle")) {
-          const targetX = item.toggle ? 15 : 0;
-          const currentX = parseFloat(toggle.style.getPropertyValue("--toggle-x")) || 0;
-          const nextX = currentX + (targetX - currentX) * 0.2;
-          toggle.style.setProperty("--toggle-x", `${nextX}px`);
-        }
-      });
-      
       requestAnimationFrame(animateSelection);
     }
-
-    // Message handling from Lua
+    
+    // ============================================
+    // MESSAGE HANDLERS (from Lua)
+    // ============================================
+    
     function handleMessage(data) {
-      console.log("Received message:", data);
+      console.log("HTML received message:", data);
       
       if (!data) return;
       
-      // Check if this is a string that needs parsing
-      let parsedData = data;
+      // Parse if string
+      let parsed = data;
       if (typeof data === "string") {
         try {
-          parsedData = JSON.parse(data);
+          parsed = JSON.parse(data);
         } catch (e) {
-          console.log("Failed to parse message:", data);
+          console.error("Failed to parse message:", data);
           return;
         }
       }
       
-      // Skip if this is from our own source
-      if (parsedData.source === "wave-ui") return;
+      // Ignore our own messages
+      if (parsed.source === "wave-ui") return;
       
-      const type = parsedData.type || parsedData.action || "";
-      console.log("Processing message type:", type);
+      const type = parsed.type || parsed.action || "";
+      console.log("Processing:", type);
       
       switch (type) {
         case "createPage":
-          handleCreatePage(parsedData.page);
+          handleCreatePage(parsed.page);
           break;
         case "createTopTab":
-          handleCreateTopTab(parsedData.pageId, parsedData.tab);
+          handleCreateTopTab(parsed.pageId, parsed.tab);
           break;
         case "createButton":
-          handleCreateButton(parsedData.pageId, parsedData.button);
+          handleCreateButton(parsed.pageId, parsed.button);
           break;
         case "createToggle":
-          handleCreateToggle(parsedData.pageId, parsedData.toggle);
+          handleCreateToggle(parsed.pageId, parsed.toggle);
           break;
         case "setToolTip":
-          handleSetToolTip(parsedData.pageId, parsedData.text);
+          handleSetToolTip(parsed.pageId, parsed.text);
           break;
         case "openPage":
-          handleOpenPage(parsedData.pageId);
+          handleOpenPage(parsed.pageId);
           break;
         case "setToggle":
-          handleSetToggle(parsedData.pageId, parsedData.buttonId, parsedData.value);
+          handleSetToggle(parsed.pageId, parsed.buttonId, parsed.value);
           break;
         case "scroll":
-          moveSelection(parsedData.direction || 1);
+          moveSelection(parsed.direction || 1);
           break;
         case "clearPages":
           handleClearPages();
           break;
         case "bootstrap":
-          handleBootstrap(parsedData.config);
+          handleBootstrap(parsed.config);
           break;
         default:
           console.log("Unknown message type:", type);
       }
     }
-
-    // Message handlers
+    
+    // ============================================
+    // INDIVIDUAL HANDLERS
+    // ============================================
+    
     function handleCreatePage(pageData) {
       console.log("Creating page:", pageData);
       if (!pageData) return;
+      
       const page = {
         id: pageData.id || normalizeId(pageData.label || "page"),
         label: pageData.label || "Page",
@@ -791,25 +778,23 @@
         children: []
       };
       
-      // Check if page already exists
       const existing = findPage(page.id);
       if (!existing) {
         state.pages.push(page);
-        console.log("Page created, total pages:", state.pages.length);
+        console.log("Page created, total:", state.pages.length);
+        render();
       } else {
         console.log("Page already exists:", page.id);
       }
-      render();
     }
-
+    
     function handleCreateTopTab(pageId, tabData) {
       console.log("Creating top tab:", pageId, tabData);
       const page = findPage(pageId);
       if (!page) {
-        console.log("Page not found:", pageId);
+        console.error("Page not found:", pageId);
         return;
       }
-      if (!tabData) return;
       
       const tab = {
         id: tabData.id || normalizeId(tabData.label || "tab"),
@@ -821,24 +806,22 @@
       const existing = findTab(page, tab.id);
       if (!existing) {
         page.children.push(tab);
-        console.log("Tab created for page:", pageId);
+        console.log("Tab created, page now has", page.children.length, "tabs");
+        render();
       }
-      render();
     }
-
+    
     function handleCreateButton(pageId, buttonData) {
       console.log("Creating button:", pageId, buttonData);
       const page = findPage(pageId);
       if (!page) {
-        console.log("Page not found:", pageId);
+        console.error("Page not found:", pageId);
         return;
       }
-      if (!buttonData) return;
       
-      // Find the current tab or use first tab
       const tab = page.children[state.activeTab] || page.children[0];
       if (!tab) {
-        console.log("No tab found for page:", pageId);
+        console.error("No tab found for page:", pageId);
         return;
       }
       
@@ -851,22 +834,21 @@
       };
       
       tab.buttons.push(button);
-      console.log("Button created, total buttons:", tab.buttons.length);
+      console.log("Button created, tab now has", tab.buttons.length, "buttons");
       render();
     }
-
+    
     function handleCreateToggle(pageId, toggleData) {
       console.log("Creating toggle:", pageId, toggleData);
       const page = findPage(pageId);
       if (!page) {
-        console.log("Page not found:", pageId);
+        console.error("Page not found:", pageId);
         return;
       }
-      if (!toggleData) return;
       
       const tab = page.children[state.activeTab] || page.children[0];
       if (!tab) {
-        console.log("No tab found for page:", pageId);
+        console.error("No tab found for page:", pageId);
         return;
       }
       
@@ -882,21 +864,23 @@
       console.log("Toggle created");
       render();
     }
-
+    
     function handleSetToolTip(pageId, text) {
       const page = findPage(pageId);
-      if (!page) return;
-      page.tooltip = text || "";
-      render();
+      if (page) {
+        page.tooltip = text || "";
+        render();
+      }
     }
-
+    
     function handleOpenPage(pageId) {
       console.log("Opening page:", pageId);
       const page = findPage(pageId);
       if (!page) {
-        console.log("Page not found:", pageId);
+        console.error("Page not found:", pageId);
         return;
       }
+      
       state.pageStack = [page];
       state.activeTab = 0;
       state.selected = 0;
@@ -904,14 +888,14 @@
       state.targetY = 0;
       render();
     }
-
+    
     function handleSetToggle(pageId, buttonId, value) {
       const page = findPage(pageId);
       if (!page) return;
       
       for (const tab of page.children) {
         for (const button of tab.buttons) {
-          if (button.id === buttonId && Object.prototype.hasOwnProperty.call(button, "toggle")) {
+          if (button.id === buttonId && button.toggle !== undefined) {
             button.toggle = !!value;
             render();
             return;
@@ -919,7 +903,7 @@
         }
       }
     }
-
+    
     function handleClearPages() {
       state.pages = [];
       state.pageStack = [];
@@ -929,7 +913,7 @@
       state.targetY = 0;
       render();
     }
-
+    
     function handleBootstrap(config) {
       console.log("Bootstrapping config:", config);
       if (!config || !config.pages) return;
@@ -978,24 +962,25 @@
       console.log("Bootstrap complete, pages:", state.pages.length);
       render();
     }
-
-    // Keyboard controls
+    
+    // ============================================
+    // KEYBOARD CONTROLS
+    // ============================================
+    
     document.addEventListener("keydown", (event) => {
-      const key = event.key.toLowerCase();
-      
       if (event.key === "Backspace") {
         goBack();
         event.preventDefault();
         return;
       }
       
-      if (state.pageStack.length && key === "e") {
+      if (state.pageStack.length && event.key.toLowerCase() === "e") {
         switchTab(1);
         event.preventDefault();
         return;
       }
       
-      if (state.pageStack.length && key === "q") {
+      if (state.pageStack.length && event.key.toLowerCase() === "q") {
         switchTab(-1);
         event.preventDefault();
         return;
@@ -1022,53 +1007,58 @@
         event.preventDefault();
       }
     });
-
-    // Handle messages from Lua via window.postMessage
+    
+    // ============================================
+    // MESSAGE LISTENERS
+    // ============================================
+    
+    // Listen for postMessage
     window.addEventListener("message", (event) => {
-      console.log("Received postMessage:", event.data);
+      console.log("postMessage received:", event.data);
       try {
         if (typeof event.data === "string") {
-          const parsed = JSON.parse(event.data);
-          handleMessage(parsed);
+          handleMessage(JSON.parse(event.data));
         } else {
           handleMessage(event.data);
         }
       } catch (e) {
-        console.log("Error processing message:", e);
+        console.error("Error processing postMessage:", e);
       }
     });
-
-    // Setup invokeNative for redENGINE
+    
+    // Listen for invokeNative (redENGINE)
     if (typeof window.invokeNative === "function") {
       console.log("invokeNative available");
-      // Store original invokeNative
       const originalInvoke = window.invokeNative;
       window.invokeNative = function(name, payload) {
         if (name === "redui") {
-          console.log("invokeNative called with:", payload);
+          console.log("invokeNative called:", payload);
           try {
             const data = typeof payload === "string" ? JSON.parse(payload) : payload;
             handleMessage(data);
           } catch (e) {
-            console.log("Error in invokeNative handler:", e);
+            console.error("Error in invokeNative handler:", e);
           }
         }
-        // Call original if needed
         if (originalInvoke) {
           return originalInvoke(name, payload);
         }
       };
     }
-
-    // Send ready signal after a delay
-    setTimeout(() => {
-      sendReady();
-      // Initial render
-      render();
-    }, 1000);
     
-    // Also try to send ready immediately
+    // ============================================
+    // INITIALIZATION
+    // ============================================
+    
+    console.log("Initializing Wave Menu...");
+    
+    // Initial render
+    render();
+    
+    // Send ready signals
     setTimeout(sendReady, 100);
+    setTimeout(sendReady, 500);
+    setTimeout(sendReady, 1000);
     
     // Start animation loop
     requestAnimationFrame(animateSelection);
