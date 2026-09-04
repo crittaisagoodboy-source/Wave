@@ -222,9 +222,9 @@
     inset 0 1px 2px rgba(0,0,0,.55);
 
   transition:
-    background 220ms cubic-bezier(.22, 1, .36, 1),
-    border-color 220ms cubic-bezier(.22, 1, .36, 1),
-    box-shadow 220ms cubic-bezier(.22, 1, .36, 1);
+    background 180ms cubic-bezier(.22, 1, .36, 1),
+    border-color 180ms cubic-bezier(.22, 1, .36, 1),
+    box-shadow 180ms cubic-bezier(.22, 1, .36, 1);
 
   will-change:
     background,
@@ -235,15 +235,21 @@
 .control-toggle::after {
   content: "";
   position: absolute;
+
   top: 2px;
   left: 2px;
+
   width: 10px;
   height: 10px;
+
   border-radius: 50%;
   background: #b9c7d6;
-  box-shadow: 0 1px 2px rgba(0,0,0,.7);
 
-  transform: translate3d(var(--toggle-x, 0px), 0, 0);
+  box-shadow:
+    0 1px 2px rgba(0,0,0,.7);
+
+  transform:
+    translate3d(var(--toggle-x, 0px), 0, 0);
 
   will-change: transform;
 }
@@ -811,8 +817,11 @@
     function activateControl(item) {
       if (!item || !pageStack.length) return;
       if (Object.prototype.hasOwnProperty.call(item, "toggle")) {
-        item.toggle = !item.toggle;
-        if (!Number.isFinite(item.toggleX)) item.toggleX = item.toggle ? 15 : 0;
+item.toggle = !item.toggle;
+
+if (!Number.isFinite(item.toggleX)) {
+  item.toggleX = item.toggle ? 0 : 15;
+}
         const row = menuList.querySelectorAll(".menu-item")[selected];
         const tog = row?.querySelector(".control-toggle");
         if (tog) { tog.classList.toggle("on", item.toggle); tog.setAttribute("aria-label", item.toggle ? "On" : "Off"); }
@@ -853,27 +862,38 @@ function animateSelection(timestamp) {
     animateSelection.lastTime = timestamp;
   }
 
-  const dt = Math.min(timestamp - animateSelection.lastTime, 32);
+  const dt = Math.min(timestamp - animateSelection.lastTime, 50);
   animateSelection.lastTime = timestamp;
 
-  // Selection glider
-  const gliderSpeed = 1 - Math.pow(0.0005, dt / 16.6667);
-  smoothY += (targetY - smoothY) * gliderSpeed;
-
-  if (Math.abs(targetY - smoothY) < 0.05) {
-    smoothY = targetY;
-  }
+  // =========================================================
+  // SELECTION GLIDER — smooth lerp
+  // =========================================================
 
   const glider = menuList.querySelector(".selection-glider");
 
   if (glider) {
+    // Frame-rate independent smoothing
+    const amount = 1 - Math.pow(0.0008, dt / 16.6667);
+
+    smoothY += (targetY - smoothY) * amount;
+
+    if (Math.abs(targetY - smoothY) < 0.01) {
+      smoothY = targetY;
+    }
+
     glider.style.transform =
       `translate3d(0, ${smoothY}px, 0)`;
   }
 
-  // Toggle animation
+
+  // =========================================================
+  // TOGGLES — smooth lerp
+  // =========================================================
+
+  const items = currentItems();
+
   menuList.querySelectorAll(".menu-item").forEach((row, i) => {
-    const item = currentItems()[i];
+    const item = items[i];
     const toggle = row.querySelector(".control-toggle");
 
     if (
@@ -886,51 +906,28 @@ function animateSelection(timestamp) {
 
     const targetX = item.toggle ? 15 : 0;
 
-    // Start a new animation when state changes
-    if (item.toggleAnimationTarget !== targetX) {
-      const currentX = Number.isFinite(item.toggleX)
-        ? item.toggleX
-        : (item.toggle ? 15 : 0);
-
-      item.toggleAnimationStart = currentX;
-      item.toggleAnimationTarget = targetX;
-      item.toggleAnimationTime = timestamp;
+    // Make sure animation position exists
+    if (!Number.isFinite(item.toggleX)) {
+      item.toggleX = targetX;
     }
 
-    const startX = Number.isFinite(item.toggleAnimationStart)
-      ? item.toggleAnimationStart
-      : targetX;
+    // Smooth lerp
+    const toggleAmount = 1 - Math.pow(0.0006, dt / 16.6667);
 
-    const startTime = Number.isFinite(item.toggleAnimationTime)
-      ? item.toggleAnimationTime
-      : timestamp;
+    item.toggleX +=
+      (targetX - item.toggleX) * toggleAmount;
 
-    const duration = 180;
-
-    let t = Math.min(
-      Math.max((timestamp - startTime) / duration, 0),
-      1
-    );
-
-    // Smooth ease-out
-    t = 1 - Math.pow(1 - t, 3);
-
-    const currentX =
-      startX + (targetX - startX) * t;
-
-    item.toggleX = currentX;
+    // Snap only when extremely close
+    if (Math.abs(targetX - item.toggleX) < 0.01) {
+      item.toggleX = targetX;
+    }
 
     toggle.style.setProperty(
       "--toggle-x",
-      `${currentX}px`
+      `${item.toggleX}px`
     );
 
     toggle.classList.toggle("on", item.toggle);
-
-    if (t >= 1) {
-      item.toggleX = targetX;
-      item.toggleAnimationStart = targetX;
-    }
   });
 
   requestAnimationFrame(animateSelection);
