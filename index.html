@@ -849,101 +849,91 @@
     }
 
 function animateSelection(timestamp) {
-
   if (!animateSelection.lastTime) {
     animateSelection.lastTime = timestamp;
   }
 
-  const dt = Math.min(
-    timestamp - animateSelection.lastTime,
-    32
-  );
-
+  const dt = Math.min(timestamp - animateSelection.lastTime, 32);
   animateSelection.lastTime = timestamp;
 
-  /*
-   * Smooth selection glider
-   */
+  // Selection glider
   const gliderSpeed = 1 - Math.pow(0.0005, dt / 16.6667);
-
-  smoothY +=
-    (targetY - smoothY) *
-    gliderSpeed;
+  smoothY += (targetY - smoothY) * gliderSpeed;
 
   if (Math.abs(targetY - smoothY) < 0.05) {
     smoothY = targetY;
   }
 
-  const glider =
-    menuList.querySelector(".selection-glider");
+  const glider = menuList.querySelector(".selection-glider");
 
   if (glider) {
     glider.style.transform =
       `translate3d(0, ${smoothY}px, 0)`;
   }
 
-  /*
-   * Smooth toggle animation
-   */
-  const toggleSpeed =
-    1 - Math.pow(0.0001, dt / 16.6667);
+  // Toggle animation
+  menuList.querySelectorAll(".menu-item").forEach((row, i) => {
+    const item = currentItems()[i];
+    const toggle = row.querySelector(".control-toggle");
 
-  menuList
-    .querySelectorAll(".menu-item")
-    .forEach((row, i) => {
+    if (
+      !item ||
+      !toggle ||
+      !Object.prototype.hasOwnProperty.call(item, "toggle")
+    ) {
+      return;
+    }
 
-      const item =
-        currentItems()[i];
+    const targetX = item.toggle ? 15 : 0;
 
-      const toggle =
-        row.querySelector(".control-toggle");
+    // Start a new animation when state changes
+    if (item.toggleAnimationTarget !== targetX) {
+      const currentX = Number.isFinite(item.toggleX)
+        ? item.toggleX
+        : (item.toggle ? 15 : 0);
 
-      if (
-        !item ||
-        !toggle ||
-        !Object.prototype.hasOwnProperty.call(
-          item,
-          "toggle"
-        )
-      ) {
-        return;
-      }
+      item.toggleAnimationStart = currentX;
+      item.toggleAnimationTarget = targetX;
+      item.toggleAnimationTime = timestamp;
+    }
 
-      const targetX =
-        item.toggle ? 15 : 0;
+    const startX = Number.isFinite(item.toggleAnimationStart)
+      ? item.toggleAnimationStart
+      : targetX;
 
-      let currentX =
-        Number.isFinite(item.toggleX)
-          ? item.toggleX
-          : targetX;
+    const startTime = Number.isFinite(item.toggleAnimationTime)
+      ? item.toggleAnimationTime
+      : timestamp;
 
-      currentX +=
-        (targetX - currentX) *
-        toggleSpeed;
+    const duration = 180;
 
-      if (
-        Math.abs(targetX - currentX) < 0.01
-      ) {
-        currentX = targetX;
-      }
+    let t = Math.min(
+      Math.max((timestamp - startTime) / duration, 0),
+      1
+    );
 
-      item.toggleX = currentX;
+    // Smooth ease-out
+    t = 1 - Math.pow(1 - t, 3);
 
-      toggle.style.setProperty(
-        "--toggle-x",
-        `${currentX}px`
-      );
+    const currentX =
+      startX + (targetX - startX) * t;
 
-      toggle.classList.toggle(
-        "on",
-        item.toggle
-      );
+    item.toggleX = currentX;
 
-    });
+    toggle.style.setProperty(
+      "--toggle-x",
+      `${currentX}px`
+    );
 
-  requestAnimationFrame(
-    animateSelection
-  );
+    toggle.classList.toggle("on", item.toggle);
+
+    if (t >= 1) {
+      item.toggleX = targetX;
+      item.toggleAnimationStart = targetX;
+    }
+  });
+
+  requestAnimationFrame(animateSelection);
 }
 
     // ─── keyboard ────────────────────────────────────────────────────────────
