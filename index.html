@@ -348,13 +348,13 @@
 
   <script>
     // ============================================
-    // COMPLETE REWRITE - Dynamic Menu System
+    // WAVE MENU - SIMPLIFIED WORKING VERSION
     // ============================================
     
-    console.log("Wave Menu loaded - Dynamic Version");
+    console.log("Wave Menu loaded - Simplified Version");
     
     // State
-    const state = {
+    var state = {
       pages: [],
       pageStack: [],
       activeTab: 0,
@@ -365,72 +365,26 @@
     };
     
     // DOM refs
-    const menuList = document.getElementById("menuList");
-    const tooltip = document.getElementById("tooltip");
-    const counter = document.getElementById("counter");
-    const tabBar = document.getElementById("tabBar");
+    var menuList = document.getElementById("menuList");
+    var tooltip = document.getElementById("tooltip");
+    var counter = document.getElementById("counter");
+    var tabBar = document.getElementById("tabBar");
     
     // ============================================
-    // UTILITY FUNCTIONS
-    // ============================================
-    
-    function normalizeId(str) {
-      return String(str || "").toLowerCase().replace(/[^a-z0-9]+/g, "-");
-    }
-    
-    function findPage(ref) {
-      const id = typeof ref === "object" ? (ref.id || ref.label) : ref;
-      const normalized = normalizeId(id);
-      return state.pages.find(p => 
-        p.id === id || 
-        p.label === id || 
-        normalizeId(p.id) === normalized ||
-        normalizeId(p.label) === normalized
-      );
-    }
-    
-    function findTab(page, ref) {
-      if (!page) return null;
-      const id = typeof ref === "object" ? (ref.id || ref.label) : ref;
-      const normalized = normalizeId(id);
-      return page.children.find(t => 
-        t.id === id || 
-        t.label === id || 
-        normalizeId(t.id) === normalized ||
-        normalizeId(t.label) === normalized
-      );
-    }
-    
-    function getCurrentPage() {
-      return state.pageStack[state.pageStack.length - 1] || null;
-    }
-    
-    function getCurrentItems() {
-      const page = getCurrentPage();
-      if (!page) return state.pages;
-      const tab = page.children[state.activeTab] || page.children[0];
-      return tab?.buttons || [];
-    }
-    
-    function getSelectedItem() {
-      const items = getCurrentItems();
-      return items[state.selected] || null;
-    }
-    
-    // ============================================
-    // SEND TO LUA (via invokeNative)
+    // SEND TO LUA
     // ============================================
     
     function sendToLua(message) {
-      const payload = {
-        source: "wave-ui",
-        ...message
+      var payload = {
+        source: "wave-ui"
       };
+      for (var key in message) {
+        payload[key] = message[key];
+      }
       
-      const jsonStr = JSON.stringify(payload);
+      var jsonStr = JSON.stringify(payload);
       console.log("Sending to Lua:", jsonStr);
       
-      // Use invokeNative for redENGINE
       if (typeof window.invokeNative === "function") {
         try {
           window.invokeNative("redui", jsonStr);
@@ -440,7 +394,6 @@
         }
       }
       
-      // Fallback to postMessage
       if (window.parent && window.parent !== window) {
         try {
           window.parent.postMessage(jsonStr, "*");
@@ -477,125 +430,173 @@
     }
     
     // ============================================
-    // RENDERING FUNCTIONS
+    // FIND FUNCTIONS
+    // ============================================
+    
+    function findPage(id) {
+      console.log("Finding page:", id, "Current pages:", state.pages.length);
+      for (var i = 0; i < state.pages.length; i++) {
+        var p = state.pages[i];
+        if (p.id === id || p.label === id) {
+          return p;
+        }
+      }
+      return null;
+    }
+    
+    function findTab(page, id) {
+      if (!page) return null;
+      for (var i = 0; i < page.children.length; i++) {
+        var t = page.children[i];
+        if (t.id === id || t.label === id) {
+          return t;
+        }
+      }
+      return null;
+    }
+    
+    function getCurrentPage() {
+      return state.pageStack[state.pageStack.length - 1] || null;
+    }
+    
+    function getCurrentItems() {
+      var page = getCurrentPage();
+      if (!page) {
+        return state.pages;
+      }
+      var tab = page.children[state.activeTab] || page.children[0];
+      return tab ? tab.buttons : [];
+    }
+    
+    function getSelectedItem() {
+      var items = getCurrentItems();
+      return items[state.selected] || null;
+    }
+    
+    // ============================================
+    // RENDER FUNCTIONS
     // ============================================
     
     function renderTabBar() {
-      tabBar.replaceChildren();
-      const page = getCurrentPage();
-      const tabs = page ? page.children : [{ label: "Main", id: "main" }];
+      tabBar.innerHTML = "";
+      var page = getCurrentPage();
+      var tabs = page ? page.children : [{ label: "Main", id: "main" }];
       
       if (!tabs || tabs.length === 0) {
-        const span = document.createElement("span");
+        var span = document.createElement("span");
         span.className = "tab";
         span.textContent = "No tabs";
         tabBar.appendChild(span);
         return;
       }
       
-      tabs.forEach((child, index) => {
-        if (index > 0) {
-          const divider = document.createElement("span");
+      for (var i = 0; i < tabs.length; i++) {
+        if (i > 0) {
+          var divider = document.createElement("span");
           divider.className = "tab-separator";
           tabBar.appendChild(divider);
         }
         
-        const tab = document.createElement("button");
-        tab.className = "tab" + (index === state.activeTab ? " active" : "");
-        tab.textContent = child.label || "Tab";
-        tab.addEventListener("click", () => {
-          if (!getCurrentPage()) return;
-          state.activeTab = index;
-          state.selected = 0;
-          state.smoothY = 0;
-          state.targetY = 0;
-          render();
-        });
+        var tab = document.createElement("button");
+        tab.className = "tab" + (i === state.activeTab ? " active" : "");
+        tab.textContent = tabs[i].label || "Tab";
+        (function(index) {
+          tab.addEventListener("click", function() {
+            if (!getCurrentPage()) return;
+            state.activeTab = index;
+            state.selected = 0;
+            state.smoothY = 0;
+            state.targetY = 0;
+            render();
+          });
+        })(i);
         tabBar.appendChild(tab);
-      });
+      }
       
-      requestAnimationFrame(() => {
-        const active = tabBar.querySelector(".tab.active");
+      requestAnimationFrame(function() {
+        var active = tabBar.querySelector(".tab.active");
         if (active) {
-          tabBar.style.setProperty("--tab-left", `${active.offsetLeft}px`);
-          tabBar.style.setProperty("--tab-width", `${active.offsetWidth}px`);
+          tabBar.style.setProperty("--tab-left", active.offsetLeft + "px");
+          tabBar.style.setProperty("--tab-width", active.offsetWidth + "px");
         }
       });
     }
     
     function renderMenuItems() {
-      const items = getCurrentItems();
-      const isControl = state.pageStack.length > 0;
+      var items = getCurrentItems();
+      var isControl = state.pageStack.length > 0;
       
-      menuList.replaceChildren();
+      menuList.innerHTML = "";
       
       // Glider
-      const glider = document.createElement("div");
+      var glider = document.createElement("div");
       glider.className = "selection-glider";
-      glider.style.transform = `translateY(${state.smoothY}px)`;
+      glider.style.transform = "translateY(" + state.smoothY + "px)";
       menuList.appendChild(glider);
       
       if (!items || items.length === 0) {
-        const empty = document.createElement("div");
+        var empty = document.createElement("div");
         empty.className = "empty-state";
         empty.textContent = isControl ? "No items in this tab" : "No pages available";
         menuList.appendChild(empty);
         return;
       }
       
-      items.forEach((item, index) => {
-        const row = document.createElement("div");
-        const isToggle = isControl && item.toggle !== undefined;
-        const toggleValue = isToggle ? (item.toggle || false) : false;
+      for (var i = 0; i < items.length; i++) {
+        var item = items[i];
+        var isToggle = isControl && item.toggle !== undefined;
+        var toggleValue = isToggle ? (item.toggle || false) : false;
         
+        var row = document.createElement("div");
         row.className = "menu-item" + 
           (isControl ? " control" : "") + 
-          (index === state.selected ? " selected" : "");
+          (i === state.selected ? " selected" : "");
         
-        let html = '';
+        var html = "";
         if (!isControl) {
-          html += `<img class="menu-icon" src="${item.icon || ''}" alt="">`;
+          html += '<img class="menu-icon" src="' + (item.icon || "") + '" alt="">';
         }
-        html += `<span>${item.label || "Item"}</span>`;
+        html += '<span>' + (item.label || "Item") + '</span>';
         
         if (isToggle) {
-          html += `<span class="control-toggle${toggleValue ? " on" : ""}" style="--toggle-x:${toggleValue ? 15 : 0}px" aria-label="${toggleValue ? "On" : "Off"}"></span>`;
+          html += '<span class="control-toggle' + (toggleValue ? " on" : "") + '" style="--toggle-x:' + (toggleValue ? 15 : 0) + 'px" aria-label="' + (toggleValue ? "On" : "Off") + '"></span>';
         } else if (!isControl) {
-          html += `<span class="chevron">›</span>`;
+          html += '<span class="chevron">›</span>';
         }
         
         row.innerHTML = html;
         
-        row.addEventListener("click", () => {
-          state.selected = index;
-          if (isControl) {
-            activateControl(item);
-          } else {
-            enterPage(item);
-          }
-          updateSelectionVisuals();
-        });
+        (function(index, itemData) {
+          row.addEventListener("click", function() {
+            state.selected = index;
+            if (isControl) {
+              activateControl(itemData);
+            } else {
+              enterPage(itemData);
+            }
+            updateSelectionVisuals();
+          });
+        })(i, item);
         
         menuList.appendChild(row);
-      });
+      }
       
-      // Update counter and tooltip
-      const selected = getSelectedItem();
+      var selected = getSelectedItem();
       if (selected) {
         tooltip.textContent = selected.desc || selected.tooltip || "";
-        counter.textContent = `${state.selected + 1}/${items.length}`;
+        counter.textContent = (state.selected + 1) + "/" + items.length;
       } else {
-        counter.textContent = `0/${items.length}`;
+        counter.textContent = "0/" + items.length;
       }
     }
     
     function render() {
-      console.log("Rendering, pages:", state.pages.length, "stack:", state.pageStack.length);
+      console.log("Rendering, pages:", state.pages.length);
       renderTabBar();
       renderMenuItems();
       
-      requestAnimationFrame(() => {
-        const targetRow = menuList.querySelectorAll(".menu-item")[state.selected];
+      requestAnimationFrame(function() {
+        var targetRow = menuList.querySelectorAll(".menu-item")[state.selected];
         if (targetRow) {
           state.targetY = targetRow.offsetTop;
         }
@@ -603,26 +604,21 @@
     }
     
     function updateSelectionVisuals() {
-      const rows = menuList.querySelectorAll(".menu-item");
-      rows.forEach((row, index) => row.classList.toggle("selected", index === state.selected));
+      var rows = menuList.querySelectorAll(".menu-item");
+      for (var i = 0; i < rows.length; i++) {
+        rows[i].classList.toggle("selected", i === state.selected);
+      }
       
-      const item = getSelectedItem();
+      var item = getSelectedItem();
       if (item) {
         tooltip.textContent = item.desc || item.tooltip || "";
-        const items = getCurrentItems();
-        counter.textContent = `${state.selected + 1}/${items.length}`;
+        var items = getCurrentItems();
+        counter.textContent = (state.selected + 1) + "/" + items.length;
       }
     }
     
-    function moveGliderToSelection(immediate = false) {
-      const row = menuList.querySelectorAll(".menu-item")[state.selected];
-      if (!row) return;
-      state.targetY = row.offsetTop;
-      if (immediate) state.smoothY = state.targetY;
-    }
-    
     function moveSelection(direction) {
-      const items = getCurrentItems();
+      var items = getCurrentItems();
       if (!items || items.length === 0) return;
       state.selected = (state.selected + direction + items.length) % items.length;
       updateSelectionVisuals();
@@ -632,24 +628,22 @@
       if (!item || !state.pageStack.length) return;
       
       if (item.toggle !== undefined) {
-        // Toggle
         item.toggle = !item.toggle;
-        const toggleX = item.toggle ? 15 : 0;
+        var toggleX = item.toggle ? 15 : 0;
         
-        const row = menuList.querySelectorAll(".menu-item")[state.selected];
-        const toggle = row?.querySelector(".control-toggle");
+        var row = menuList.querySelectorAll(".menu-item")[state.selected];
+        var toggle = row ? row.querySelector(".control-toggle") : null;
         if (toggle) {
           toggle.classList.toggle("on", item.toggle);
-          toggle.style.setProperty("--toggle-x", `${toggleX}px`);
+          toggle.style.setProperty("--toggle-x", toggleX + "px");
           toggle.setAttribute("aria-label", item.toggle ? "On" : "Off");
         }
         
-        const page = getCurrentPage();
-        sendToggleChange(page?.label || "Main", item.id, item.label, item.toggle);
+        var page = getCurrentPage();
+        sendToggleChange(page ? page.label : "Main", item.id, item.label, item.toggle);
       } else {
-        // Button
-        const page = getCurrentPage();
-        sendButtonPress(page?.label || "Main", item.id, item.label);
+        var page = getCurrentPage();
+        sendButtonPress(page ? page.label : "Main", item.id, item.label);
       }
     }
     
@@ -657,7 +651,6 @@
       if (!item) return;
       
       if (!item.children || item.children.length === 0) {
-        // No children, treat as button on main page
         sendButtonPress("Main", item.id, item.label);
         return;
       }
@@ -681,7 +674,7 @@
     }
     
     function switchTab(direction) {
-      const page = getCurrentPage();
+      var page = getCurrentPage();
       if (!page || page.children.length < 2) return;
       state.activeTab = (state.activeTab + direction + page.children.length) % page.children.length;
       state.selected = 0;
@@ -694,280 +687,243 @@
       state.smoothY += (state.targetY - state.smoothY) * 0.18;
       if (Math.abs(state.targetY - state.smoothY) < 0.08) state.smoothY = state.targetY;
       
-      const glider = menuList.querySelector(".selection-glider");
-      if (glider) glider.style.transform = `translateY(${state.smoothY}px)`;
+      var glider = menuList.querySelector(".selection-glider");
+      if (glider) glider.style.transform = "translateY(" + state.smoothY + "px)";
       
       requestAnimationFrame(animateSelection);
     }
     
     // ============================================
-    // MESSAGE HANDLERS (from Lua)
+    // MESSAGE HANDLERS
     // ============================================
     
     function handleMessage(data) {
-      console.log("HTML received message:", data);
+      console.log("HTML received:", data);
       
       if (!data) return;
       
       // Parse if string
-      let parsed = data;
       if (typeof data === "string") {
         try {
-          parsed = JSON.parse(data);
+          data = JSON.parse(data);
         } catch (e) {
-          console.error("Failed to parse message:", data);
+          console.error("Failed to parse:", data);
           return;
         }
       }
       
       // Ignore our own messages
-      if (parsed.source === "wave-ui") return;
+      if (data.source === "wave-ui") return;
       
-      const type = parsed.type || parsed.action || "";
-      console.log("Processing:", type);
+      var type = data.type || data.action || "";
+      console.log("Processing type:", type);
       
       switch (type) {
         case "createPage":
-          handleCreatePage(parsed.page);
+          console.log("Creating page with data:", data.page);
+          if (data.page) {
+            var page = {
+              id: data.page.id || data.page.label.toLowerCase().replace(/\s+/g, "-"),
+              label: data.page.label || "Page",
+              desc: data.page.desc || "",
+              tooltip: data.page.tooltip || "",
+              children: []
+            };
+            
+            var existing = findPage(page.id);
+            if (!existing) {
+              state.pages.push(page);
+              console.log("Page added, total:", state.pages.length);
+              render();
+            }
+          }
           break;
+          
         case "createTopTab":
-          handleCreateTopTab(parsed.pageId, parsed.tab);
+          console.log("Creating top tab:", data.pageId, data.tab);
+          if (data.pageId && data.tab) {
+            var page = findPage(data.pageId);
+            if (page) {
+              var tab = {
+                id: data.tab.id || data.tab.label.toLowerCase().replace(/\s+/g, "-"),
+                label: data.tab.label || "Tab",
+                desc: data.tab.desc || "",
+                buttons: []
+              };
+              
+              var existing = findTab(page, tab.id);
+              if (!existing) {
+                page.children.push(tab);
+                console.log("Tab added to page, now has", page.children.length, "tabs");
+                render();
+              }
+            } else {
+              console.error("Page not found:", data.pageId);
+            }
+          }
           break;
+          
         case "createButton":
-          handleCreateButton(parsed.pageId, parsed.button);
+          console.log("Creating button:", data.pageId, data.button);
+          if (data.pageId && data.button) {
+            var page = findPage(data.pageId);
+            if (page) {
+              var tab = page.children[state.activeTab] || page.children[0];
+              if (tab) {
+                var button = {
+                  id: data.button.id || data.button.label.toLowerCase().replace(/\s+/g, "-"),
+                  label: data.button.label || "Button",
+                  desc: data.button.desc || "",
+                  icon: data.button.icon || "",
+                  toggle: data.button.toggle !== undefined ? data.button.toggle : undefined
+                };
+                tab.buttons.push(button);
+                console.log("Button added to tab, now has", tab.buttons.length, "buttons");
+                render();
+              } else {
+                console.error("No tab found for page:", data.pageId);
+              }
+            } else {
+              console.error("Page not found:", data.pageId);
+            }
+          }
           break;
+          
         case "createToggle":
-          handleCreateToggle(parsed.pageId, parsed.toggle);
+          console.log("Creating toggle:", data.pageId, data.toggle);
+          if (data.pageId && data.toggle) {
+            var page = findPage(data.pageId);
+            if (page) {
+              var tab = page.children[state.activeTab] || page.children[0];
+              if (tab) {
+                var toggle = {
+                  id: data.toggle.id || data.toggle.label.toLowerCase().replace(/\s+/g, "-"),
+                  label: data.toggle.label || "Toggle",
+                  desc: data.toggle.desc || "",
+                  icon: data.toggle.icon || "",
+                  toggle: data.toggle.toggle || false
+                };
+                tab.buttons.push(toggle);
+                console.log("Toggle added");
+                render();
+              }
+            }
+          }
           break;
-        case "setToolTip":
-          handleSetToolTip(parsed.pageId, parsed.text);
-          break;
+          
         case "openPage":
-          handleOpenPage(parsed.pageId);
+          console.log("Opening page:", data.pageId);
+          if (data.pageId) {
+            var page = findPage(data.pageId);
+            if (page) {
+              state.pageStack = [page];
+              state.activeTab = 0;
+              state.selected = 0;
+              state.smoothY = 0;
+              state.targetY = 0;
+              render();
+            } else {
+              console.error("Page not found:", data.pageId);
+            }
+          }
           break;
+          
         case "setToggle":
-          handleSetToggle(parsed.pageId, parsed.buttonId, parsed.value);
+          console.log("Setting toggle:", data.pageId, data.buttonId, data.value);
+          if (data.pageId && data.buttonId) {
+            var page = findPage(data.pageId);
+            if (page) {
+              for (var i = 0; i < page.children.length; i++) {
+                var tab = page.children[i];
+                for (var j = 0; j < tab.buttons.length; j++) {
+                  var button = tab.buttons[j];
+                  if (button.id === data.buttonId && button.toggle !== undefined) {
+                    button.toggle = !!data.value;
+                    render();
+                    return;
+                  }
+                }
+              }
+            }
+          }
           break;
+          
         case "scroll":
-          moveSelection(parsed.direction || 1);
+          moveSelection(data.direction || 1);
           break;
+          
         case "clearPages":
-          handleClearPages();
+          state.pages = [];
+          state.pageStack = [];
+          state.activeTab = 0;
+          state.selected = 0;
+          state.smoothY = 0;
+          state.targetY = 0;
+          render();
           break;
+          
         case "bootstrap":
-          handleBootstrap(parsed.config);
+          console.log("Bootstrapping:", data.config);
+          if (data.config && data.config.pages) {
+            state.pages = [];
+            state.pageStack = [];
+            
+            for (var i = 0; i < data.config.pages.length; i++) {
+              var rawPage = data.config.pages[i];
+              var page = {
+                id: rawPage.id || rawPage.label.toLowerCase().replace(/\s+/g, "-"),
+                label: rawPage.label || "Page",
+                desc: rawPage.desc || "",
+                tooltip: rawPage.tooltip || "",
+                children: []
+              };
+              
+              if (rawPage.tabs) {
+                for (var j = 0; j < rawPage.tabs.length; j++) {
+                  var rawTab = rawPage.tabs[j];
+                  var tab = {
+                    id: rawTab.id || rawTab.label.toLowerCase().replace(/\s+/g, "-"),
+                    label: rawTab.label || "Tab",
+                    desc: rawTab.desc || "",
+                    buttons: []
+                  };
+                  
+                  if (rawTab.buttons) {
+                    for (var k = 0; k < rawTab.buttons.length; k++) {
+                      var rawButton = rawTab.buttons[k];
+                      var button = {
+                        id: rawButton.id || rawButton.label.toLowerCase().replace(/\s+/g, "-"),
+                        label: rawButton.label || "Button",
+                        desc: rawButton.desc || "",
+                        icon: rawButton.icon || "",
+                        toggle: rawButton.toggle !== undefined ? rawButton.toggle : undefined
+                      };
+                      tab.buttons.push(button);
+                    }
+                  }
+                  
+                  page.children.push(tab);
+                }
+              }
+              
+              state.pages.push(page);
+            }
+            
+            console.log("Bootstrap complete, pages:", state.pages.length);
+            render();
+          }
           break;
+          
         default:
           console.log("Unknown message type:", type);
       }
     }
     
     // ============================================
-    // INDIVIDUAL HANDLERS
-    // ============================================
-    
-    function handleCreatePage(pageData) {
-      console.log("Creating page:", pageData);
-      if (!pageData) return;
-      
-      const page = {
-        id: pageData.id || normalizeId(pageData.label || "page"),
-        label: pageData.label || "Page",
-        desc: pageData.desc || "",
-        tooltip: pageData.tooltip || "",
-        children: []
-      };
-      
-      const existing = findPage(page.id);
-      if (!existing) {
-        state.pages.push(page);
-        console.log("Page created, total:", state.pages.length);
-        render();
-      } else {
-        console.log("Page already exists:", page.id);
-      }
-    }
-    
-    function handleCreateTopTab(pageId, tabData) {
-      console.log("Creating top tab:", pageId, tabData);
-      const page = findPage(pageId);
-      if (!page) {
-        console.error("Page not found:", pageId);
-        return;
-      }
-      
-      const tab = {
-        id: tabData.id || normalizeId(tabData.label || "tab"),
-        label: tabData.label || "Tab",
-        desc: tabData.desc || "",
-        buttons: []
-      };
-      
-      const existing = findTab(page, tab.id);
-      if (!existing) {
-        page.children.push(tab);
-        console.log("Tab created, page now has", page.children.length, "tabs");
-        render();
-      }
-    }
-    
-    function handleCreateButton(pageId, buttonData) {
-      console.log("Creating button:", pageId, buttonData);
-      const page = findPage(pageId);
-      if (!page) {
-        console.error("Page not found:", pageId);
-        return;
-      }
-      
-      const tab = page.children[state.activeTab] || page.children[0];
-      if (!tab) {
-        console.error("No tab found for page:", pageId);
-        return;
-      }
-      
-      const button = {
-        id: buttonData.id || normalizeId(buttonData.label || "button"),
-        label: buttonData.label || "Button",
-        desc: buttonData.desc || "",
-        icon: buttonData.icon || "",
-        toggle: buttonData.toggle !== undefined ? buttonData.toggle : undefined
-      };
-      
-      tab.buttons.push(button);
-      console.log("Button created, tab now has", tab.buttons.length, "buttons");
-      render();
-    }
-    
-    function handleCreateToggle(pageId, toggleData) {
-      console.log("Creating toggle:", pageId, toggleData);
-      const page = findPage(pageId);
-      if (!page) {
-        console.error("Page not found:", pageId);
-        return;
-      }
-      
-      const tab = page.children[state.activeTab] || page.children[0];
-      if (!tab) {
-        console.error("No tab found for page:", pageId);
-        return;
-      }
-      
-      const toggle = {
-        id: toggleData.id || normalizeId(toggleData.label || "toggle"),
-        label: toggleData.label || "Toggle",
-        desc: toggleData.desc || "",
-        icon: toggleData.icon || "",
-        toggle: toggleData.toggle || false
-      };
-      
-      tab.buttons.push(toggle);
-      console.log("Toggle created");
-      render();
-    }
-    
-    function handleSetToolTip(pageId, text) {
-      const page = findPage(pageId);
-      if (page) {
-        page.tooltip = text || "";
-        render();
-      }
-    }
-    
-    function handleOpenPage(pageId) {
-      console.log("Opening page:", pageId);
-      const page = findPage(pageId);
-      if (!page) {
-        console.error("Page not found:", pageId);
-        return;
-      }
-      
-      state.pageStack = [page];
-      state.activeTab = 0;
-      state.selected = 0;
-      state.smoothY = 0;
-      state.targetY = 0;
-      render();
-    }
-    
-    function handleSetToggle(pageId, buttonId, value) {
-      const page = findPage(pageId);
-      if (!page) return;
-      
-      for (const tab of page.children) {
-        for (const button of tab.buttons) {
-          if (button.id === buttonId && button.toggle !== undefined) {
-            button.toggle = !!value;
-            render();
-            return;
-          }
-        }
-      }
-    }
-    
-    function handleClearPages() {
-      state.pages = [];
-      state.pageStack = [];
-      state.activeTab = 0;
-      state.selected = 0;
-      state.smoothY = 0;
-      state.targetY = 0;
-      render();
-    }
-    
-    function handleBootstrap(config) {
-      console.log("Bootstrapping config:", config);
-      if (!config || !config.pages) return;
-      
-      state.pages = [];
-      state.pageStack = [];
-      
-      config.pages.forEach(rawPage => {
-        const page = {
-          id: rawPage.id || normalizeId(rawPage.label || "page"),
-          label: rawPage.label || "Page",
-          desc: rawPage.desc || "",
-          tooltip: rawPage.tooltip || "",
-          children: []
-        };
-        
-        if (rawPage.tabs) {
-          rawPage.tabs.forEach(rawTab => {
-            const tab = {
-              id: rawTab.id || normalizeId(rawTab.label || "tab"),
-              label: rawTab.label || "Tab",
-              desc: rawTab.desc || "",
-              buttons: []
-            };
-            
-            if (rawTab.buttons) {
-              rawTab.buttons.forEach(rawButton => {
-                const button = {
-                  id: rawButton.id || normalizeId(rawButton.label || "button"),
-                  label: rawButton.label || "Button",
-                  desc: rawButton.desc || "",
-                  icon: rawButton.icon || "",
-                  toggle: rawButton.toggle !== undefined ? rawButton.toggle : undefined
-                };
-                tab.buttons.push(button);
-              });
-            }
-            
-            page.children.push(tab);
-          });
-        }
-        
-        state.pages.push(page);
-      });
-      
-      console.log("Bootstrap complete, pages:", state.pages.length);
-      render();
-    }
-    
-    // ============================================
     // KEYBOARD CONTROLS
     // ============================================
     
-    document.addEventListener("keydown", (event) => {
+    document.addEventListener("keydown", function(event) {
       if (event.key === "Backspace") {
         goBack();
         event.preventDefault();
@@ -987,7 +943,7 @@
       }
       
       if (event.key === "Enter") {
-        const item = getSelectedItem();
+        var item = getSelectedItem();
         if (!state.pageStack.length) {
           enterPage(item);
         } else {
@@ -1013,7 +969,7 @@
     // ============================================
     
     // Listen for postMessage
-    window.addEventListener("message", (event) => {
+    window.addEventListener("message", function(event) {
       console.log("postMessage received:", event.data);
       try {
         if (typeof event.data === "string") {
@@ -1026,15 +982,15 @@
       }
     });
     
-    // Listen for invokeNative (redENGINE)
+    // Hook into invokeNative for redENGINE
     if (typeof window.invokeNative === "function") {
       console.log("invokeNative available");
-      const originalInvoke = window.invokeNative;
+      var originalInvoke = window.invokeNative;
       window.invokeNative = function(name, payload) {
         if (name === "redui") {
           console.log("invokeNative called:", payload);
           try {
-            const data = typeof payload === "string" ? JSON.parse(payload) : payload;
+            var data = typeof payload === "string" ? JSON.parse(payload) : payload;
             handleMessage(data);
           } catch (e) {
             console.error("Error in invokeNative handler:", e);
