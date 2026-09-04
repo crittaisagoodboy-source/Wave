@@ -206,33 +206,47 @@
 
     .menu-item.control { cursor: pointer; }
 
-    .control-toggle {
-      position: relative;
-      width: 31px;
-      height: 16px;
-      flex: 0 0 31px;
-      margin-left: auto;
-      border: 1px solid rgba(120, 156, 194, .58);
-      border-radius: 999px;
-      background: rgba(28, 45, 67, .85);
-      box-shadow: inset 0 1px 2px rgba(0,0,0,.55);
-      transition: background .28s ease, border-color .28s ease, box-shadow .28s ease;
-      will-change: background, border-color, box-shadow;
-    }
+.control-toggle {
+  position: relative;
+  width: 31px;
+  height: 16px;
+  flex: 0 0 31px;
+  margin-left: auto;
 
-    .control-toggle::after {
-      content: "";
-      position: absolute;
-      top: 2px;
-      left: 2px;
-      width: 10px;
-      height: 10px;
-      border-radius: 50%;
-      background: #b9c7d6;
-      box-shadow: 0 1px 2px rgba(0,0,0,.7);
-      transform: translateX(var(--toggle-x, 0px));
-      will-change: transform;
-    }
+  border: 1px solid rgba(120, 156, 194, .58);
+  border-radius: 999px;
+
+  background: rgba(28, 45, 67, .85);
+
+  box-shadow:
+    inset 0 1px 2px rgba(0,0,0,.55);
+
+  transition:
+    background 220ms cubic-bezier(.22, 1, .36, 1),
+    border-color 220ms cubic-bezier(.22, 1, .36, 1),
+    box-shadow 220ms cubic-bezier(.22, 1, .36, 1);
+
+  will-change:
+    background,
+    border-color,
+    box-shadow;
+}
+
+.control-toggle::after {
+  content: "";
+  position: absolute;
+  top: 2px;
+  left: 2px;
+  width: 10px;
+  height: 10px;
+  border-radius: 50%;
+  background: #b9c7d6;
+  box-shadow: 0 1px 2px rgba(0,0,0,.7);
+
+  transform: translate3d(var(--toggle-x, 0px), 0, 0);
+
+  will-change: transform;
+}
 
     .control-toggle.on {
       border-color: #1598ff;
@@ -834,25 +848,103 @@
       render();
     }
 
-    function animateSelection() {
-      smoothY += (targetY - smoothY) * 0.18;
-      if (Math.abs(targetY - smoothY) < 0.08) smoothY = targetY;
-      const glider = menuList.querySelector(".selection-glider");
-      if (glider) glider.style.transform = `translateY(${smoothY}px)`;
-      menuList.querySelectorAll(".menu-item").forEach((row, i) => {
-        const item = currentItems()[i];
-        const tog  = row.querySelector(".control-toggle");
-        if (item && tog && Object.prototype.hasOwnProperty.call(item, "toggle")) {
-          const curX  = Number.isFinite(item.toggleX) ? item.toggleX : (item.toggle ? 15 : 0);
-          const tarX  = item.toggle ? 15 : 0;
-          const nextX = curX + (tarX - curX) * 0.2;
-          item.toggleX = Math.abs(tarX - nextX) < 0.05 ? tarX : nextX;
-          tog.style.setProperty("--toggle-x", `${item.toggleX}px`);
-          tog.classList.toggle("on", item.toggle);
-        }
-      });
-      requestAnimationFrame(animateSelection);
-    }
+function animateSelection(timestamp) {
+
+  if (!animateSelection.lastTime) {
+    animateSelection.lastTime = timestamp;
+  }
+
+  const dt = Math.min(
+    timestamp - animateSelection.lastTime,
+    32
+  );
+
+  animateSelection.lastTime = timestamp;
+
+  /*
+   * Smooth selection glider
+   */
+  const gliderSpeed = 1 - Math.pow(0.0005, dt / 16.6667);
+
+  smoothY +=
+    (targetY - smoothY) *
+    gliderSpeed;
+
+  if (Math.abs(targetY - smoothY) < 0.05) {
+    smoothY = targetY;
+  }
+
+  const glider =
+    menuList.querySelector(".selection-glider");
+
+  if (glider) {
+    glider.style.transform =
+      `translate3d(0, ${smoothY}px, 0)`;
+  }
+
+  /*
+   * Smooth toggle animation
+   */
+  const toggleSpeed =
+    1 - Math.pow(0.0001, dt / 16.6667);
+
+  menuList
+    .querySelectorAll(".menu-item")
+    .forEach((row, i) => {
+
+      const item =
+        currentItems()[i];
+
+      const toggle =
+        row.querySelector(".control-toggle");
+
+      if (
+        !item ||
+        !toggle ||
+        !Object.prototype.hasOwnProperty.call(
+          item,
+          "toggle"
+        )
+      ) {
+        return;
+      }
+
+      const targetX =
+        item.toggle ? 15 : 0;
+
+      let currentX =
+        Number.isFinite(item.toggleX)
+          ? item.toggleX
+          : targetX;
+
+      currentX +=
+        (targetX - currentX) *
+        toggleSpeed;
+
+      if (
+        Math.abs(targetX - currentX) < 0.01
+      ) {
+        currentX = targetX;
+      }
+
+      item.toggleX = currentX;
+
+      toggle.style.setProperty(
+        "--toggle-x",
+        `${currentX}px`
+      );
+
+      toggle.classList.toggle(
+        "on",
+        item.toggle
+      );
+
+    });
+
+  requestAnimationFrame(
+    animateSelection
+  );
+}
 
     // ─── keyboard ────────────────────────────────────────────────────────────
     document.addEventListener("keydown", ev => {
