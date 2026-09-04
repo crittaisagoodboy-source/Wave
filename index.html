@@ -221,6 +221,7 @@
       background: rgba(28, 45, 67, .85);
       box-shadow: inset 0 1px 2px rgba(0,0,0,.55);
       transition: background .28s ease, border-color .28s ease, box-shadow .28s ease;
+      will-change: background, border-color, box-shadow;
     }
 
     .control-toggle::after {
@@ -407,6 +408,10 @@
         ];
         tab.buttons.forEach((button, buttonIndex) => {
           button.id = button.id || `${tab.id}-button-${buttonIndex + 1}`;
+          if (Object.prototype.hasOwnProperty.call(button, "toggle")) {
+            button.toggle = Boolean(button.toggle);
+            button.toggleX = button.toggle ? 15 : 0;
+          }
         });
       });
     });
@@ -464,18 +469,22 @@
 
     function normaliseEntry(entry, fallbackLabel) {
       const value = typeof entry === "string" ? { label: entry } : (entry || {});
+      const hasToggle = Object.prototype.hasOwnProperty.call(value, "toggle");
+      const toggle = hasToggle ? Boolean(value.toggle) : undefined;
       return {
         id: value.id || idOf(value.label || fallbackLabel),
         label: value.label || fallbackLabel || "Item",
         icon: value.icon || icons.misc,
         desc: value.desc || value.tooltip || "",
-        ...(Object.prototype.hasOwnProperty.call(value, "toggle") ? { toggle: Boolean(value.toggle) } : {})
+        ...(hasToggle ? { toggle, toggleX: toggle ? 15 : 0 } : {})
       };
     }
 
     function emitWaveEvent(type, payload) {
       const message = { source: "wave-ui", type, ...payload };
+      window.WaveUI && (window.WaveUI.lastEvent = message);
       window.dispatchEvent(new CustomEvent("wave:ui", { detail: message }));
+      if (typeof window.WaveUI?.onEvent === "function") window.WaveUI.onEvent(message);
       if (window.parent && window.parent !== window) window.parent.postMessage(message, "*");
     }
 
@@ -497,6 +506,8 @@
         const page = findPage(pageRef);
         if (!page) return null;
         const value = typeof tab === "object" ? tab : { id: tab, label: tab, desc: description };
+        const existing = findTab(page, value.id || value.label);
+        if (existing) return existing.id;
         const item = normaliseEntry(value, value.label || "Tab");
         item.buttons = [];
         page.children.push(item);
@@ -530,23 +541,57 @@
         if (currentPage() === page) render();
         return true;
       },
+      openPage(pageRef) {
+        const page = findPage(pageRef);
+        if (!page || !page.children?.length) return false;
+        pageStack = [page];
+        activeTab = 0;
+        selected = 0;
+        smoothY = 0;
+        targetY = 0;
+        render();
+        return true;
+      },
       setToggle(pageRef, buttonRef, value) {
         const page = findPage(pageRef);
         if (!page) return false;
         const button = page.children.flatMap(tab => tab.buttons || []).find(item => item.id === buttonRef || item.label === buttonRef);
         if (!button || !Object.prototype.hasOwnProperty.call(button, "toggle")) return false;
         button.toggle = Boolean(value);
-        render();
+        if (!Number.isFinite(button.toggleX)) button.toggleX = button.toggle ? 15 : 0;
+        const row = [...menuList.querySelectorAll(".menu-item")].find((element, index) => currentItems()[index] === button);
+        const toggle = row?.querySelector(".control-toggle");
+        if (toggle) {
+          toggle.classList.toggle("on", button.toggle);
+          toggle.setAttribute("aria-label", button.toggle ? "On" : "Off");
+        }
+        emitWaveEvent("toggleChanged", { page: page.label, id: button.id, label: button.label, value: button.toggle });
         return true;
       },
       scroll(direction) {
         const items = currentItems();
         if (!items.length) return;
-        selected = (selected + Number(direction || 0) + items.length) % items.length;
-        render();
+        moveSelection(Number(direction || 0));
       },
       getState() {
         return { page: currentPage()?.label || "Main", tab: currentTab()?.label || "Main", selected: selectedItem()?.label || null, index: selected + 1 };
+      },
+      clearPageItems(pageRef) {
+        const page = findPage(pageRef);
+        if (!page) return false;
+        page.children.forEach(tab => { tab.buttons = []; });
+        render();
+        return true;
+      },
+      clearPages() {
+        pageStack = [];
+        activeTab = 0;
+        selected = 0;
+        smoothY = 0;
+        targetY = 0;
+        mainItems.splice(0, mainItems.length);
+        render();
+        return true;
       }
     };
 
@@ -565,9 +610,12 @@
         else if (type === "createbutton") WaveUI.createButton(data.pageId || data.page, data.button || data);
         else if (type === "createtoggle") WaveUI.createToggle(data.pageId || data.page, data.toggle || data);
         else if (type === "settooltipforpage" || type === "settooltip") WaveUI.setToolTipForPage(data.pageId || data.page, data.text || data.tooltip || "");
+        else if (type === "openpage") WaveUI.openPage(data.pageId || data.page);
         else if (type === "settoggle") WaveUI.setToggle(data.pageId || data.page, data.buttonId || data.button, data.value);
         else if (type === "scroll") WaveUI.scroll(Number(data.direction || data.amount || 0));
-        else if (type === "setselection") { selected = Math.max(0, Number(data.index || 1) - 1); render(); }
+        else if (type === "setselection") { selected = Math.max(0, Math.min(currentItems().length - 1, Number(data.index || 1) - 1)); updateSelectionVisuals(); }
+        else if (type === "clearpageitems") WaveUI.clearPageItems(data.pageId || data.page);
+        else if (type === "clearpages") WaveUI.clearPages();
         else return;
         emitWaveEvent("messageHandled", { action: type });
       } catch (error) {
@@ -610,6 +658,24 @@
       });
     }
 
+    function updateSelectionVisuals() {
+      const rows = menuList.querySelectorAll(".menu-item");
+      rows.forEach((row, index) => row.classList.toggle("selected", index === selected));
+      const item = selectedItem();
+      if (item) {
+        tooltip.textContent = currentPage()?.tooltip || item.desc || "";
+        counter.textContent = `${selected + 1}/${currentItems().length}`;
+      }
+      moveGliderToSelection(false);
+    }
+
+    function moveSelection(direction) {
+      const items = currentItems();
+      if (!items.length) return;
+      selected = (selected + Number(direction || 0) + items.length) % items.length;
+      updateSelectionVisuals();
+    }
+
     function moveGliderToSelection(immediate = false) {
       const row = menuList.querySelectorAll(".menu-item")[selected];
       if (!row) return;
@@ -634,16 +700,18 @@
         const isControl = pageStack.length > 0;
         const row = document.createElement("div");
         const isToggle = isControl && Object.prototype.hasOwnProperty.call(item, "toggle");
+        const initialToggleX = Object.prototype.hasOwnProperty.call(item, "toggleX") ? item.toggleX : (item.toggle ? 15 : 0);
+        if (isToggle && !Object.prototype.hasOwnProperty.call(item, "toggleX")) item.toggleX = initialToggleX;
         row.className = "menu-item" + (isControl ? " control" : "") + (index === selected ? " selected" : "");
         row.innerHTML = `
-          <img class="menu-icon" src="${item.icon}" alt="">
+          ${isControl ? "" : `<img class="menu-icon" src="${item.icon}" alt="">`}
           <span>${item.label}</span>
-          ${isToggle ? `<span class="control-toggle${item.toggle ? " on" : ""}" aria-label="${item.toggle ? "On" : "Off"}"></span>` : (!isControl ? `<span class="chevron">›</span>` : "")}
+          ${isToggle ? `<span class="control-toggle${item.toggle ? " on" : ""}" style="--toggle-x:${initialToggleX}px" aria-label="${item.toggle ? "On" : "Off"}"></span>` : (!isControl ? `<span class="chevron">›</span>` : "")}
         `;
         row.addEventListener("click", () => {
           selected = index;
           if (isControl) activateControl(item);
-          else render();
+          updateSelectionVisuals();
         });
         menuList.appendChild(row);
       });
@@ -661,12 +729,12 @@
       if (!item || !pageStack.length) return;
       if (Object.prototype.hasOwnProperty.call(item, "toggle")) {
         item.toggle = !item.toggle;
+        if (!Number.isFinite(item.toggleX)) item.toggleX = item.toggle ? 15 : 0;
         const row = menuList.querySelectorAll(".menu-item")[selected];
         const toggle = row?.querySelector(".control-toggle");
         if (toggle) {
           toggle.classList.toggle("on", item.toggle);
           toggle.setAttribute("aria-label", item.toggle ? "On" : "Off");
-          /* The animation loop lerps --toggle-x instead of jumping it. */
         }
         emitWaveEvent("toggleChanged", { page: currentPage()?.label || "Main", id: item.id, label: item.label, value: item.toggle });
       } else {
@@ -711,13 +779,16 @@
       if (Math.abs(targetY - smoothY) < 0.08) smoothY = targetY;
       const glider = menuList.querySelector(".selection-glider");
       if (glider) glider.style.transform = `translateY(${smoothY}px)`;
-      menuList.querySelectorAll(".control-toggle").forEach((toggle, index) => {
+      menuList.querySelectorAll(".menu-item").forEach((row, index) => {
         const item = currentItems()[index];
-        if (item) {
-          const currentX = parseFloat(toggle.style.getPropertyValue("--toggle-x")) || 0;
+        const toggle = row.querySelector(".control-toggle");
+        if (item && toggle && Object.prototype.hasOwnProperty.call(item, "toggle")) {
+          const currentX = Number.isFinite(item.toggleX) ? item.toggleX : (item.toggle ? 15 : 0);
           const targetX = item.toggle ? 15 : 0;
           const nextX = currentX + (targetX - currentX) * 0.2;
-          toggle.style.setProperty("--toggle-x", `${Math.abs(targetX - nextX) < 0.05 ? targetX : nextX}px`);
+          item.toggleX = Math.abs(targetX - nextX) < 0.05 ? targetX : nextX;
+          toggle.style.setProperty("--toggle-x", `${item.toggleX}px`);
+          toggle.classList.toggle("on", item.toggle);
         }
       });
       requestAnimationFrame(animateSelection);
@@ -748,13 +819,11 @@
         return;
       }
       if (event.key === "ArrowDown" || event.key === "ArrowRight") {
-        selected = (selected + 1) % items.length;
-        render();
+        moveSelection(1);
         event.preventDefault();
       }
       if (event.key === "ArrowUp" || event.key === "ArrowLeft") {
-        selected = (selected - 1 + items.length) % items.length;
-        render();
+        moveSelection(-1);
         event.preventDefault();
       }
     });
@@ -762,7 +831,7 @@
     render();
     uiReady = true;
     pendingUiMessages.splice(0).forEach(message => handleDuiMessage({ data: message }));
-    emitWaveEvent("ready", { api: ["createButton", "createToggle", "createPage", "createTopTab", "setToolTipForPage", "scroll"] });
+    emitWaveEvent("ready", { api: ["createButton", "createToggle", "createPage", "createTopTab", "setToolTipForPage", "openPage", "scroll", "clearPageItems", "clearPages"] });
     requestAnimationFrame(animateSelection);
   </script>
 </body>
