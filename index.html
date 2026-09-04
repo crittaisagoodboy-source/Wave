@@ -374,7 +374,8 @@
       selected: 0,
       smoothY: 0,
       targetY: 0,
-      currentPage: null
+      currentPage: null,
+      ready: false
     };
 
     // DOM elements
@@ -382,6 +383,8 @@
     const tooltip = document.getElementById("tooltip");
     const counter = document.getElementById("counter");
     const tabBar = document.getElementById("tabBar");
+
+    console.log("Wave Menu loaded");
 
     // Helper functions
     function normalizeId(str) {
@@ -427,20 +430,40 @@
         ...message
       };
       
-      // Try different methods to communicate with Lua
-      if (window.parent && window.parent !== window) {
-        window.parent.postMessage(JSON.stringify(payload), "*");
+      const jsonStr = JSON.stringify(payload);
+      console.log("Sending to Lua:", jsonStr);
+      
+      // Method 1: Use invokeNative (redENGINE's preferred method)
+      if (typeof window.invokeNative === "function") {
+        try {
+          window.invokeNative("redui", jsonStr);
+          console.log("Sent via invokeNative");
+          return;
+        } catch (e) {
+          console.log("invokeNative failed:", e);
+        }
       }
       
-      // Also try the invokeNative method for redENGINE
-      if (typeof window.invokeNative === "function") {
-        window.invokeNative("redui", JSON.stringify(payload));
+      // Method 2: Use parent.postMessage
+      if (window.parent && window.parent !== window) {
+        try {
+          window.parent.postMessage(jsonStr, "*");
+          console.log("Sent via postMessage");
+          return;
+        } catch (e) {
+          console.log("postMessage failed:", e);
+        }
       }
+      
+      // Method 3: Use console (for debugging)
+      console.log("Could not send message to Lua");
     }
 
     // Send ready signal
     function sendReady() {
+      console.log("Sending ready signal");
       sendToLua({ type: "ready" });
+      state.ready = true;
     }
 
     // Send toggle change
@@ -469,6 +492,14 @@
       tabBar.replaceChildren();
       const page = getCurrentPage();
       const tabs = page ? page.children : [{ label: "Main", id: "main" }];
+
+      if (!tabs || tabs.length === 0) {
+        const emptyTab = document.createElement("span");
+        emptyTab.className = "tab";
+        emptyTab.textContent = "No tabs";
+        tabBar.appendChild(emptyTab);
+        return;
+      }
 
       tabs.forEach((child, index) => {
         if (index > 0) {
@@ -562,6 +593,7 @@
     }
 
     function render() {
+      console.log("Rendering menu, pages:", state.pages.length);
       renderTabBar();
       renderMenuItems();
       
@@ -690,42 +722,57 @@
 
     // Message handling from Lua
     function handleMessage(data) {
-      if (!data || data.source === "wave-ui") return;
-      
       console.log("Received message:", data);
       
-      const type = data.type || data.action || "";
+      if (!data) return;
+      
+      // Check if this is a string that needs parsing
+      let parsedData = data;
+      if (typeof data === "string") {
+        try {
+          parsedData = JSON.parse(data);
+        } catch (e) {
+          console.log("Failed to parse message:", data);
+          return;
+        }
+      }
+      
+      // Skip if this is from our own source
+      if (parsedData.source === "wave-ui") return;
+      
+      const type = parsedData.type || parsedData.action || "";
+      console.log("Processing message type:", type);
       
       switch (type) {
         case "createPage":
-          handleCreatePage(data.page);
+          handleCreatePage(parsedData.page);
           break;
         case "createTopTab":
-          handleCreateTopTab(data.pageId, data.tab);
+          handleCreateTopTab(parsedData.pageId, parsedData.tab);
           break;
         case "createButton":
-          handleCreateButton(data.pageId, data.button);
+          handleCreateButton(parsedData.pageId, parsedData.button);
           break;
         case "createToggle":
-          handleCreateToggle(data.pageId, data.toggle);
+          handleCreateToggle(parsedData.pageId, parsedData.toggle);
           break;
         case "setToolTip":
-          handleSetToolTip(data.pageId, data.text);
+          handleSetToolTip(parsedData.pageId, parsedData.text);
           break;
         case "openPage":
-          handleOpenPage(data.pageId);
+          handleOpenPage(parsedData.pageId);
           break;
         case "setToggle":
-          handleSetToggle(data.pageId, data.buttonId, data.value);
+          handleSetToggle(parsedData.pageId, parsedData.buttonId, parsedData.value);
           break;
         case "scroll":
-          moveSelection(data.direction || 1);
+          moveSelection(parsedData.direction || 1);
           break;
         case "clearPages":
           handleClearPages();
           break;
         case "bootstrap":
-          handleBootstrap(data.config);
+          handleBootstrap(parsedData.config);
           break;
         default:
           console.log("Unknown message type:", type);
@@ -734,6 +781,7 @@
 
     // Message handlers
     function handleCreatePage(pageData) {
+      console.log("Creating page:", pageData);
       if (!pageData) return;
       const page = {
         id: pageData.id || normalizeId(pageData.label || "page"),
@@ -747,13 +795,21 @@
       const existing = findPage(page.id);
       if (!existing) {
         state.pages.push(page);
+        console.log("Page created, total pages:", state.pages.length);
+      } else {
+        console.log("Page already exists:", page.id);
       }
       render();
     }
 
     function handleCreateTopTab(pageId, tabData) {
+      console.log("Creating top tab:", pageId, tabData);
       const page = findPage(pageId);
-      if (!page || !tabData) return;
+      if (!page) {
+        console.log("Page not found:", pageId);
+        return;
+      }
+      if (!tabData) return;
       
       const tab = {
         id: tabData.id || normalizeId(tabData.label || "tab"),
@@ -765,17 +821,26 @@
       const existing = findTab(page, tab.id);
       if (!existing) {
         page.children.push(tab);
+        console.log("Tab created for page:", pageId);
       }
       render();
     }
 
     function handleCreateButton(pageId, buttonData) {
+      console.log("Creating button:", pageId, buttonData);
       const page = findPage(pageId);
-      if (!page || !buttonData) return;
+      if (!page) {
+        console.log("Page not found:", pageId);
+        return;
+      }
+      if (!buttonData) return;
       
       // Find the current tab or use first tab
       const tab = page.children[state.activeTab] || page.children[0];
-      if (!tab) return;
+      if (!tab) {
+        console.log("No tab found for page:", pageId);
+        return;
+      }
       
       const button = {
         id: buttonData.id || normalizeId(buttonData.label || "button"),
@@ -786,15 +851,24 @@
       };
       
       tab.buttons.push(button);
+      console.log("Button created, total buttons:", tab.buttons.length);
       render();
     }
 
     function handleCreateToggle(pageId, toggleData) {
+      console.log("Creating toggle:", pageId, toggleData);
       const page = findPage(pageId);
-      if (!page || !toggleData) return;
+      if (!page) {
+        console.log("Page not found:", pageId);
+        return;
+      }
+      if (!toggleData) return;
       
       const tab = page.children[state.activeTab] || page.children[0];
-      if (!tab) return;
+      if (!tab) {
+        console.log("No tab found for page:", pageId);
+        return;
+      }
       
       const toggle = {
         id: toggleData.id || normalizeId(toggleData.label || "toggle"),
@@ -805,6 +879,7 @@
       };
       
       tab.buttons.push(toggle);
+      console.log("Toggle created");
       render();
     }
 
@@ -816,8 +891,12 @@
     }
 
     function handleOpenPage(pageId) {
+      console.log("Opening page:", pageId);
       const page = findPage(pageId);
-      if (!page) return;
+      if (!page) {
+        console.log("Page not found:", pageId);
+        return;
+      }
       state.pageStack = [page];
       state.activeTab = 0;
       state.selected = 0;
@@ -852,6 +931,7 @@
     }
 
     function handleBootstrap(config) {
+      console.log("Bootstrapping config:", config);
       if (!config || !config.pages) return;
       
       state.pages = [];
@@ -895,6 +975,7 @@
         state.pages.push(page);
       });
       
+      console.log("Bootstrap complete, pages:", state.pages.length);
       render();
     }
 
@@ -944,29 +1025,55 @@
 
     // Handle messages from Lua via window.postMessage
     window.addEventListener("message", (event) => {
+      console.log("Received postMessage:", event.data);
       try {
-        const data = typeof event.data === "string" ? JSON.parse(event.data) : event.data;
-        if (data && data.source !== "wave-ui") {
-          handleMessage(data);
+        if (typeof event.data === "string") {
+          const parsed = JSON.parse(event.data);
+          handleMessage(parsed);
+        } else {
+          handleMessage(event.data);
         }
       } catch (e) {
-        // Ignore parse errors
+        console.log("Error processing message:", e);
       }
     });
 
-    // Handle messages via invokeNative (for redENGINE)
+    // Setup invokeNative for redENGINE
     if (typeof window.invokeNative === "function") {
-      // redENGINE will call this
+      console.log("invokeNative available");
+      // Store original invokeNative
+      const originalInvoke = window.invokeNative;
+      window.invokeNative = function(name, payload) {
+        if (name === "redui") {
+          console.log("invokeNative called with:", payload);
+          try {
+            const data = typeof payload === "string" ? JSON.parse(payload) : payload;
+            handleMessage(data);
+          } catch (e) {
+            console.log("Error in invokeNative handler:", e);
+          }
+        }
+        // Call original if needed
+        if (originalInvoke) {
+          return originalInvoke(name, payload);
+        }
+      };
     }
 
-    // Initial render
-    render();
-    
     // Send ready signal after a delay
-    setTimeout(sendReady, 500);
+    setTimeout(() => {
+      sendReady();
+      // Initial render
+      render();
+    }, 1000);
+    
+    // Also try to send ready immediately
+    setTimeout(sendReady, 100);
     
     // Start animation loop
     requestAnimationFrame(animateSelection);
+    
+    console.log("Wave Menu initialized, waiting for Lua messages...");
   </script>
 </body>
 </html>
