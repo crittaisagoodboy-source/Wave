@@ -60,16 +60,6 @@
       background: rgba(0, 2, 8, .96);
       border-bottom: 1px solid rgba(10, 122, 242, .66);
       text-shadow: 0 1px 3px #000;
-      overflow-x: auto;
-      overflow-y: hidden;
-    }
-
-    .tab-bar::-webkit-scrollbar {
-      height: 2px;
-    }
-
-    .tab-bar::-webkit-scrollbar-thumb {
-      background: var(--blue);
     }
 
     .tab-bar::after {
@@ -116,18 +106,6 @@
       background: var(--panel);
       border-left: 1px solid rgba(15, 112, 236, .4);
       border-right: 1px solid rgba(15, 112, 236, .28);
-      min-height: 200px;
-      max-height: 400px;
-      overflow-y: auto;
-    }
-
-    .menu-body::-webkit-scrollbar {
-      width: 4px;
-    }
-
-    .menu-body::-webkit-scrollbar-thumb {
-      background: var(--blue);
-      border-radius: 2px;
     }
 
     .menu-body.main-view {
@@ -136,8 +114,27 @@
     }
 
     .menu-body.page-view {
-      min-height: 200px;
-      overflow-y: auto;
+      min-height: 0;
+      overflow: hidden;
+    }
+
+    .page-intro {
+      position: relative;
+      z-index: 1;
+      padding: 8px 15px 7px;
+      color: #8799ae;
+      font-size: 11px;
+      line-height: 1.25;
+      border-bottom: 1px solid rgba(17, 90, 163, .3);
+      text-shadow: 0 1px 3px #000;
+    }
+
+    .page-intro strong {
+      display: block;
+      margin-bottom: 2px;
+      color: #e7f0fb;
+      font-size: 14px;
+      font-weight: 500;
     }
 
     .menu-body::before {
@@ -207,9 +204,7 @@
       transform: translateY(-1px);
     }
 
-    .menu-item.control {
-      cursor: pointer;
-    }
+    .menu-item.control { cursor: pointer; }
 
     .control-toggle {
       position: relative;
@@ -245,9 +240,7 @@
       box-shadow: 0 0 6px rgba(0, 145, 255, .55), inset 0 0 4px rgba(255,255,255,.12);
     }
 
-    .control-toggle.on::after {
-      background: #f4fbff;
-    }
+    .control-toggle.on::after { background: #f4fbff; }
 
     .footer {
       position: relative;
@@ -299,17 +292,6 @@
       box-shadow: 0 0 0 1px rgba(0, 34, 102, .72), 0 5px 12px rgba(0,0,0,.22);
     }
 
-    .empty-state {
-      display: flex;
-      align-items: center;
-      justify-content: center;
-      height: 100px;
-      color: #8799ae;
-      font-size: 14px;
-      text-align: center;
-      padding: 20px;
-    }
-
     @media (max-width: 700px) {
       .menu-shell { left: 18px; width: min(78vw, 430px); }
     }
@@ -327,699 +309,576 @@
       <img
         class="banner-image"
         alt="Wave banner"
-        src="data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='860' height='260' viewBox='0 0 860 260'%3E%3Crect width='860' height='260' fill='%230788ef'/%3E%3Ctext x='430' y='142' text-anchor='middle' fill='white' font-family='Arial' font-size='34' font-weight='bold'%3EWAVE MENU%3C/text%3E%3C/svg%3E"
+        src="data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='860' height='260' viewBox='0 0 860 260'%3E%3Crect width='860' height='260' fill='%230788ef'/%3E%3Ctext x='430' y='142' text-anchor='middle' fill='white' font-family='Arial' font-size='34' font-weight='bold'%3EBANNER IMAGE PLACEHOLDER%3C/text%3E%3C/svg%3E"
       />
 
       <nav class="tab-bar" id="tabBar" aria-label="Page tabs"></nav>
-      <div class="menu-body main-view" id="menuList">
-        <div class="empty-state">Loading menu...<br>Press F1 to toggle</div>
-      </div>
+      <div class="menu-body main-view" id="menuList"></div>
       <div class="footer">
         <svg class="footer-logo" viewBox="0 0 64 40" aria-label="Wave logo" role="img">
           <path fill="#08a4ff" d="M2 30c14-17 24-27 39-27 8 0 15 3 21 9-9-3-16-2-22 2-11 7-15 18-26 18-4 0-8-1-12-2Z" />
           <path fill="#075bea" d="M2 31c12 2 19 8 29 8 12 0 18-9 31-13-9 1-16 2-22 6-8 5-13 5-20 1-6-3-11-3-18-2Z" />
         </svg>
         <span>discord.gg/wave</span>
-        <span class="counter" id="counter">0/0</span>
+        <span class="counter" id="counter">1/9</span>
       </div>
-      <div class="tooltip" id="tooltip">Menu loaded successfully</div>
+      <div class="tooltip" id="tooltip">Access self-related functions including movement, appearance, and abilities.</div>
     </section>
   </main>
 
   <script>
-    // ============================================
-    // WAVE MENU - SIMPLIFIED WORKING VERSION
-    // ============================================
-    
-    console.log("Wave Menu loaded - Simplified Version");
-    
-    // State
-    var state = {
-      pages: [],
-      pageStack: [],
-      activeTab: 0,
-      selected: 0,
-      smoothY: 0,
-      targetY: 0,
-      ready: false
+    // ─── icon registry ────────────────────────────────────────────────────────
+    const icons = {
+      player:  "https://i.postimg.cc/wv2k46P4/icons8-person-64-(2).png",
+      vehicle: "https://i.postimg.cc/VLdF4PFq/icons8-car-24.png",
+      combat:  "https://i.postimg.cc/MTf9Hkrd/gun-solid-(1).png",
+      online:  "https://i.postimg.cc/L8hL2tWX/people-group-solid.png",
+      exploit: "https://i.postimg.cc/VkMsq5rR/icons8-coding-50.png",
+      visual:  "https://i.postimg.cc/SxjT3z7d/eye-solid-(1).png",
+      misc:    "https://i.postimg.cc/bNsq8PbC/icons8-more-50.png",
+      setting: "https://i.postimg.cc/prpRpdMw/icons8-settings-24.png"
     };
-    
-    // DOM refs
-    var menuList = document.getElementById("menuList");
-    var tooltip = document.getElementById("tooltip");
-    var counter = document.getElementById("counter");
-    var tabBar = document.getElementById("tabBar");
-    
-    // ============================================
-    // SEND TO LUA
-    // ============================================
-    
-    function sendToLua(message) {
-      var payload = {
-        source: "wave-ui"
-      };
-      for (var key in message) {
-        payload[key] = message[key];
-      }
-      
-      var jsonStr = JSON.stringify(payload);
-      console.log("Sending to Lua:", jsonStr);
-      
-      if (typeof window.invokeNative === "function") {
-        try {
-          window.invokeNative("redui", jsonStr);
-          return;
-        } catch (e) {
-          console.error("invokeNative failed:", e);
-        }
-      }
-      
-      if (window.parent && window.parent !== window) {
-        try {
-          window.parent.postMessage(jsonStr, "*");
-          return;
-        } catch (e) {
-          console.error("postMessage failed:", e);
-        }
-      }
-    }
-    
-    function sendReady() {
-      console.log("Sending ready signal");
-      sendToLua({ type: "ready" });
-      state.ready = true;
-    }
-    
-    function sendToggleChange(page, id, label, value) {
-      sendToLua({
-        type: "toggleChanged",
-        page: page,
-        id: id,
-        label: label,
-        value: value
+
+    // ─── seed data ────────────────────────────────────────────────────────────
+    const mainItems = [
+      { icon: icons.player, label: "Self", desc: "Access self-related functions including movement, appearance, and abilities.", children: [
+        { icon: icons.player, label: "Player",     desc: "Player movement, health, armor, and appearance." },
+        { icon: icons.visual, label: "Appearance", desc: "Customize player model, outfit, and style." }
+      ] },
+      { icon: icons.online, label: "Online", desc: "Manage online players, sessions, and connected services.", children: [
+        { icon: icons.online, label: "Players", desc: "Browse and interact with online players." },
+        { icon: icons.misc,   label: "Session", desc: "Session and lobby utilities." }
+      ] },
+      { icon: icons.misc,  label: "Server", desc: "Server utilities, information, and administration tools.", children: [
+        { icon: icons.misc,    label: "Information",   desc: "View server details and status." },
+        { icon: icons.setting, label: "Administration",desc: "Server administration options." }
+      ] },
+      { icon: icons.misc,  label: "Cloud", desc: "Cloud storage, synchronization, and account tools.", children: [
+        { icon: icons.misc,    label: "Profiles", desc: "Manage saved profiles." },
+        { icon: icons.setting, label: "Sync",     desc: "Synchronize settings and preferences." }
+      ] },
+      { icon: icons.combat, label: "Weapons / Combat", desc: "Configure weapons, combat behavior, and aim options.", children: [
+        { icon: icons.combat, label: "Weapons", desc: "Weapon configuration and loadouts." },
+        { icon: icons.combat, label: "Combat",  desc: "Combat and aim preferences." }
+      ] },
+      { icon: icons.vehicle, label: "Vehicle", desc: "Vehicle controls, customization, and performance tools.", children: [
+        { icon: icons.vehicle, label: "Spawn",     desc: "Spawn and manage vehicles." },
+        { icon: icons.setting, label: "Customize", desc: "Customize vehicle appearance and performance." }
+      ] },
+      { icon: icons.exploit, label: "Triggers", desc: "Create and manage automated gameplay triggers.", children: [
+        { icon: icons.exploit, label: "Events",     desc: "Manage trigger events." },
+        { icon: icons.setting, label: "Automation", desc: "Configure automated actions." }
+      ] },
+      { icon: icons.setting, label: "Settings", desc: "Customize the menu, controls, colors, and preferences.", children: [
+        { icon: icons.setting, label: "Interface", desc: "Adjust menu display and layout." },
+        { icon: icons.setting, label: "Controls",  desc: "Change keyboard controls." }
+      ] },
+      { icon: icons.misc, label: "Search", desc: "Search available features and tools quickly.", children: [
+        { icon: icons.misc, label: "Search Features", desc: "Find features by name." }
+      ] }
+    ];
+
+    const actionSets = {
+      Player: [
+        { icon: icons.player,  label: "Movement", desc: "Player movement options.",      toggle: false },
+        { icon: icons.player,  label: "Health",   desc: "Health and armor options." },
+        { icon: icons.setting, label: "Abilities",desc: "Player ability options.",        toggle: false }
+      ],
+      Appearance: [
+        { icon: icons.visual,  label: "Model",      desc: "Change the player model." },
+        { icon: icons.visual,  label: "Outfit",     desc: "Manage outfits and clothing.",  toggle: false },
+        { icon: icons.setting, label: "Components", desc: "Edit player components and accessories." }
+      ]
+    };
+
+    // ─── normalise IDs ────────────────────────────────────────────────────────
+    mainItems.forEach((page, pi) => {
+      page.id = page.id || page.label.toLowerCase().replace(/[^a-z0-9]+/g, "-");
+      page.children.forEach((tab, ti) => {
+        tab.id = tab.id || `${page.id}-tab-${ti + 1}`;
+        tab.buttons = actionSets[tab.label] || [
+          { id: `${tab.id}-overview`, icon: tab.icon,    label: "Overview", desc: tab.desc },
+          { id: `${tab.id}-options`,  icon: icons.setting,label: "Options",  desc: `Configure ${tab.label.toLowerCase()} options.`, toggle: false }
+        ];
+        tab.buttons.forEach((b, bi) => {
+          b.id = b.id || `${tab.id}-button-${bi + 1}`;
+          if (Object.prototype.hasOwnProperty.call(b, "toggle")) {
+            b.toggle  = Boolean(b.toggle);
+            b.toggleX = b.toggle ? 15 : 0;
+          }
+        });
       });
+    });
+
+    // ─── state ────────────────────────────────────────────────────────────────
+    const menuList = document.getElementById("menuList");
+    const tooltip  = document.getElementById("tooltip");
+    const counter  = document.getElementById("counter");
+    const tabBar   = document.getElementById("tabBar");
+
+    let pageStack = [];
+    let activeTab = 0;
+    let selected  = 0;
+    let smoothY   = 0;
+    let targetY   = 0;
+
+    // ─── state helpers ────────────────────────────────────────────────────────
+    const currentPage  = () => pageStack[pageStack.length - 1] || null;
+    const currentTab   = () => { const p = currentPage(); return p ? (p.children[activeTab] || p.children[0]) : null; };
+    const currentItems = () => { if (!currentPage()) return mainItems; const t = currentPage().children[activeTab] || currentPage().children[0]; return t?.buttons || []; };
+    const selectedItem = () => currentItems()[selected] || currentItems()[0];
+
+    function idOf(v) { return String(v || "").toLowerCase().replace(/[^a-z0-9]+/g, "-"); }
+
+    function findPage(ref) {
+      const want = typeof ref === "object" ? (ref.id || ref.label) : ref;
+      return mainItems.find(p => p.id === want || p.label === want || idOf(p.label) === idOf(want));
     }
-    
-    function sendButtonPress(page, id, label) {
-      sendToLua({
-        type: "buttonPressed",
-        page: page,
-        id: id,
-        label: label
-      });
-    }
-    
-    // ============================================
-    // FIND FUNCTIONS
-    // ============================================
-    
-    function findPage(id) {
-      console.log("Finding page:", id, "Current pages:", state.pages.length);
-      for (var i = 0; i < state.pages.length; i++) {
-        var p = state.pages[i];
-        if (p.id === id || p.label === id) {
-          return p;
-        }
-      }
-      return null;
-    }
-    
-    function findTab(page, id) {
+
+    function findTab(page, ref) {
       if (!page) return null;
-      for (var i = 0; i < page.children.length; i++) {
-        var t = page.children[i];
-        if (t.id === id || t.label === id) {
-          return t;
-        }
+      const want = typeof ref === "object" ? (ref.id || ref.label) : ref;
+      return page.children.find(t => t.id === want || t.label === want || idOf(t.label) === idOf(want));
+    }
+
+    function ensureTab(page, ref) {
+      if (!page.children.length) {
+        page.children.push({ id: `${page.id}-tab-1`, label: page.label, icon: page.icon || icons.misc, desc: page.desc || "", buttons: [] });
       }
-      return null;
+      return findTab(page, ref) || page.children[0];
     }
-    
-    function getCurrentPage() {
-      return state.pageStack[state.pageStack.length - 1] || null;
+
+    function normaliseEntry(entry, fallback) {
+      const v       = typeof entry === "string" ? { label: entry } : (entry || {});
+      const hasToggle = Object.prototype.hasOwnProperty.call(v, "toggle");
+      const toggle  = hasToggle ? Boolean(v.toggle) : undefined;
+      return {
+        id:    v.id    || idOf(v.label || fallback),
+        label: v.label || fallback || "Item",
+        icon:  v.icon  || icons.misc,
+        desc:  v.desc  || v.tooltip || "",
+        ...(hasToggle ? { toggle, toggleX: toggle ? 15 : 0 } : {})
+      };
     }
-    
-    function getCurrentItems() {
-      var page = getCurrentPage();
-      if (!page) {
-        return state.pages;
-      }
-      var tab = page.children[state.activeTab] || page.children[0];
-      return tab ? tab.buttons : [];
+
+    // ─── event emitters ───────────────────────────────────────────────────────
+    function emitWaveEvent(type, payload) {
+      const msg = { source: "wave-ui", type, ...payload };
+      window.WaveUI && (window.WaveUI.lastEvent = msg);
+      window.dispatchEvent(new CustomEvent("wave:ui", { detail: msg }));
+      if (typeof window.WaveUI?.onEvent === "function") window.WaveUI.onEvent(msg);
+      if (window.parent && window.parent !== window) window.parent.postMessage(msg, "*");
+      // Also call back into Lua via invokeNative so redENGINE.NUI.AddCallback fires.
+      try { window.invokeNative?.("redui", JSON.stringify(msg)); } catch (_) {}
     }
-    
-    function getSelectedItem() {
-      var items = getCurrentItems();
-      return items[state.selected] || null;
+
+    function emitActionMessage(action, payload) {
+      const msg = { source: "wave-ui", type: "wave_ui_event", action, ...payload };
+      window.WaveUI && (window.WaveUI.lastActionMessage = msg);
+      window.dispatchEvent(new CustomEvent("wave:ui:event", { detail: msg }));
+      if (window.parent && window.parent !== window) window.parent.postMessage(msg, "*");
+      try { window.invokeNative?.("redui", JSON.stringify(msg)); } catch (_) {}
     }
-    
-    // ============================================
-    // RENDER FUNCTIONS
-    // ============================================
-    
-    function renderTabBar() {
-      tabBar.innerHTML = "";
-      var page = getCurrentPage();
-      var tabs = page ? page.children : [{ label: "Main", id: "main" }];
-      
-      if (!tabs || tabs.length === 0) {
-        var span = document.createElement("span");
-        span.className = "tab";
-        span.textContent = "No tabs";
-        tabBar.appendChild(span);
-        return;
-      }
-      
-      for (var i = 0; i < tabs.length; i++) {
-        if (i > 0) {
-          var divider = document.createElement("span");
-          divider.className = "tab-separator";
-          tabBar.appendChild(divider);
-        }
-        
-        var tab = document.createElement("button");
-        tab.className = "tab" + (i === state.activeTab ? " active" : "");
-        tab.textContent = tabs[i].label || "Tab";
-        (function(index) {
-          tab.addEventListener("click", function() {
-            if (!getCurrentPage()) return;
-            state.activeTab = index;
-            state.selected = 0;
-            state.smoothY = 0;
-            state.targetY = 0;
-            render();
+
+    // ─── public JS / DUI API ──────────────────────────────────────────────────
+    let uiReady = false;
+    const pendingUiMessages = [];
+
+    window.WaveUI = {
+      createPage(page, label, description) {
+        const v = typeof page === "object" ? page : { id: page, label, desc: description };
+        const item = normaliseEntry(v, v.label || "Page");
+        item.children = [];
+        if (!findPage(item.id)) mainItems.push(item);
+        render();
+        return item.id;
+      },
+
+      createTopTab(pageRef, tab, description) {
+        const page = findPage(pageRef);
+        if (!page) return null;
+        const v = typeof tab === "object" ? tab : { id: idOf(tab), label: tab, desc: description };
+        const existing = findTab(page, v.id || v.label);
+        if (existing) return existing.id;
+        const item = normaliseEntry(v, v.label || "Tab");
+        item.buttons = [];
+        page.children.push(item);
+        render();
+        return item.id;
+      },
+
+      createButton(pageRef, button, label, icon) {
+        const page = findPage(pageRef);
+        if (!page) return null;
+        const v = typeof button === "object" ? button : { id: button, label, icon };
+        // Lua sends tab as v.tab / v.tabId / v.tabLabel
+        const tabRef = v.tab || v.tabId || v.tabLabel;
+        const tab = ensureTab(page, tabRef);
+        const item = normaliseEntry(v, v.label || "Button");
+        tab.buttons.push(item);
+        render();
+        return item.id;
+      },
+
+      createToggle(pageRef, toggle, label, initial) {
+        const page = findPage(pageRef);
+        if (!page) return null;
+        const v = typeof toggle === "object" ? toggle : { id: toggle, label, toggle: initial };
+        const tabRef = v.tab || v.tabId || v.tabLabel;
+        const tab = ensureTab(page, tabRef);
+        const item = normaliseEntry({ ...v, toggle: Boolean(v.toggle ?? v.value ?? initial) }, v.label || "Toggle");
+        tab.buttons.push(item);
+        render();
+        return item.id;
+      },
+
+      setToolTipForPage(pageRef, text) {
+        const page = findPage(pageRef);
+        if (!page) return false;
+        page.tooltip = String(text || "");
+        if (currentPage() === page) render();
+        return true;
+      },
+
+      openPage(pageRef) {
+        const page = findPage(pageRef);
+        if (!page || !page.children?.length) return false;
+        pageStack = [page]; activeTab = 0; selected = 0; smoothY = 0; targetY = 0;
+        render();
+        return true;
+      },
+
+      setToggle(pageRef, buttonRef, value) {
+        const page = findPage(pageRef);
+        if (!page) return false;
+        const button = page.children.flatMap(t => t.buttons || [])
+          .find(b => b.id === buttonRef || b.label === buttonRef || idOf(b.label) === idOf(buttonRef));
+        if (!button || !Object.prototype.hasOwnProperty.call(button, "toggle")) return false;
+        button.toggle = Boolean(value);
+        if (!Number.isFinite(button.toggleX)) button.toggleX = button.toggle ? 15 : 0;
+        const row    = [...menuList.querySelectorAll(".menu-item")].find((_, i) => currentItems()[i] === button);
+        const tog    = row?.querySelector(".control-toggle");
+        if (tog) { tog.classList.toggle("on", button.toggle); tog.setAttribute("aria-label", button.toggle ? "On" : "Off"); }
+        const ep = { page: page.label, id: button.id, label: button.label, value: button.toggle };
+        emitWaveEvent("toggleChanged", ep);
+        emitActionMessage("toggle", ep);
+        return true;
+      },
+
+      scroll(direction) {
+        if (!currentItems().length) return;
+        moveSelection(Number(direction || 0));
+      },
+
+      getState() {
+        return { page: currentPage()?.label || "Main", tab: currentTab()?.label || "Main", selected: selectedItem()?.label || null, index: selected + 1 };
+      },
+
+      clearPageItems(pageRef) {
+        const page = findPage(pageRef);
+        if (!page) return false;
+        page.children.forEach(t => { t.buttons = []; });
+        render();
+        return true;
+      },
+
+      clearPages() {
+        pageStack = []; activeTab = 0; selected = 0; smoothY = 0; targetY = 0;
+        mainItems.splice(0, mainItems.length);
+        render();
+        return true;
+      },
+
+      bootstrap(config) {
+        const v = config || {};
+        pageStack = []; activeTab = 0; selected = 0; smoothY = 0; targetY = 0;
+        mainItems.splice(0, mainItems.length);
+        (Array.isArray(v.pages) ? v.pages : []).forEach((rp, pi) => {
+          const page = normaliseEntry(rp, rp.label || `Page ${pi + 1}`);
+          page.children = [];
+          page.tooltip  = rp.tooltip || "";
+          (Array.isArray(rp.tabs) ? rp.tabs : []).forEach((rt, ti) => {
+            const tab = normaliseEntry(rt, rt.label || `Tab ${ti + 1}`);
+            tab.buttons = [];
+            (Array.isArray(rt.buttons) ? rt.buttons : []).forEach((rb, bi) => {
+              const btn = normaliseEntry(rb, rb.label || `Button ${bi + 1}`);
+              if (Object.prototype.hasOwnProperty.call(btn, "toggle")) btn.toggleX = btn.toggle ? 15 : 0;
+              tab.buttons.push(btn);
+            });
+            page.children.push(tab);
           });
-        })(i);
-        tabBar.appendChild(tab);
+          mainItems.push(page);
+        });
+        render();
+        return true;
       }
-      
-      requestAnimationFrame(function() {
-        var active = tabBar.querySelector(".tab.active");
-        if (active) {
-          tabBar.style.setProperty("--tab-left", active.offsetLeft + "px");
-          tabBar.style.setProperty("--tab-width", active.offsetWidth + "px");
+    };
+
+    // ─── DUI / postMessage handler ────────────────────────────────────────────
+    // Supports every message shape that WaveUI.lua sends, plus raw JSON strings.
+    function handleDuiMessage(event) {
+      let msg = event?.data;
+      // redENGINE sometimes delivers the payload as a raw JSON string.
+      if (typeof msg === "string") {
+        try { msg = JSON.parse(msg); } catch (_) { return; }
+      }
+      if (!msg || typeof msg !== "object") return;
+
+      if (!uiReady) { pendingUiMessages.push(msg); return; }
+
+      // Normalise the action name: strip "wave." / "wave:" prefix, lowercase.
+      const rawType = String(msg.type || msg.action || "").replace(/^wave[:.]/i, "").toLowerCase();
+
+      // ── resolve page / tab / button refs ──
+      // Lua sends page refs as: msg.page (string id) or nested objects.
+      const pageRef   = msg.page   || msg.pageId   || msg.pageRef;
+      const tabRef    = msg.tab    || msg.tabId     || msg.tabRef;
+      const buttonRef = msg.button || msg.buttonId  || msg.buttonRef || msg.toggle || msg.toggleId;
+
+      // When Lua sends { type="createButton", page="self", button={ id=…, label=…, tab=… } }
+      // the button object itself carries the tab ref; we forward it as-is.
+      const buttonObj = (typeof buttonRef === "object") ? buttonRef : { id: buttonRef };
+      const toggleObj = (typeof msg.toggle === "object") ? msg.toggle : (buttonObj.id ? buttonObj : { id: buttonRef });
+
+      try {
+        switch (rawType) {
+          // ── page management ──
+          case "createpage":
+            WaveUI.createPage(msg.page || msg); break;
+
+          case "createtoptab":
+            WaveUI.createTopTab(pageRef, tabRef || msg.tab); break;
+
+          // ── buttons ──
+          case "createbutton":
+            // msg.button may be the whole object from Lua (with .tab inside)
+            WaveUI.createButton(pageRef, buttonRef); break;
+
+          // ── toggles ──
+          case "createtoggle":
+            WaveUI.createToggle(pageRef, toggleObj); break;
+
+          case "settoggle":
+          case "updatetoggle":
+            WaveUI.setToggle(pageRef, msg.buttonId || msg.toggleId || msg.button || msg.toggle, msg.value); break;
+
+          // ── navigation ──
+          case "openpage":
+            WaveUI.openPage(pageRef); break;
+
+          // ── tooltip ──
+          case "settooltipforpage":
+          case "settooltip":
+            WaveUI.setToolTipForPage(pageRef, msg.text || msg.tooltip || ""); break;
+
+          // ── selection / scrolling ──
+          case "scroll":
+            WaveUI.scroll(Number(msg.direction || msg.amount || 0)); break;
+
+          case "setselection":
+            selected = Math.max(0, Math.min(currentItems().length - 1, Number(msg.index || 1) - 1));
+            updateSelectionVisuals(); break;
+
+          // ── bulk ops ──
+          case "clearpageitems":
+            WaveUI.clearPageItems(pageRef); break;
+
+          case "clearpages":
+            WaveUI.clearPages(); break;
+
+          case "bootstrap":
+          case "loadconfig":
+            WaveUI.bootstrap(msg.config || msg); break;
+
+          default:
+            return; // unknown message — ignore silently
         }
+        emitWaveEvent("messageHandled", { action: rawType });
+      } catch (err) {
+        emitWaveEvent("messageError", { action: rawType, error: String(err) });
+      }
+    }
+
+    window.addEventListener("message", handleDuiMessage);
+
+    // ─── rendering ────────────────────────────────────────────────────────────
+    function updateTabBar() {
+      tabBar.replaceChildren();
+      const tabs = currentPage() ? currentPage().children : [{ label: "Main" }];
+      tabs.forEach((child, i) => {
+        if (i > 0) { const div = document.createElement("span"); div.className = "tab-separator"; tabBar.appendChild(div); }
+        const btn = document.createElement("button");
+        btn.className = "tab" + (i === (currentPage() ? activeTab : 0) ? " active" : "");
+        btn.textContent = child.label;
+        btn.addEventListener("click", () => {
+          if (!currentPage()) return;
+          activeTab = i; selected = 0; smoothY = 0; targetY = 0;
+          render();
+        });
+        tabBar.appendChild(btn);
+      });
+      requestAnimationFrame(() => {
+        const active = tabBar.querySelector(".tab.active");
+        if (!active) return;
+        tabBar.style.setProperty("--tab-left",  `${active.offsetLeft}px`);
+        tabBar.style.setProperty("--tab-width", `${active.offsetWidth}px`);
       });
     }
-    
-    function renderMenuItems() {
-      var items = getCurrentItems();
-      var isControl = state.pageStack.length > 0;
-      
-      menuList.innerHTML = "";
-      
-      // Glider
-      var glider = document.createElement("div");
-      glider.className = "selection-glider";
-      glider.style.transform = "translateY(" + state.smoothY + "px)";
-      menuList.appendChild(glider);
-      
-      if (!items || items.length === 0) {
-        var empty = document.createElement("div");
-        empty.className = "empty-state";
-        empty.textContent = isControl ? "No items in this tab" : "No pages available";
-        menuList.appendChild(empty);
-        return;
-      }
-      
-      for (var i = 0; i < items.length; i++) {
-        var item = items[i];
-        var isToggle = isControl && item.toggle !== undefined;
-        var toggleValue = isToggle ? (item.toggle || false) : false;
-        
-        var row = document.createElement("div");
-        row.className = "menu-item" + 
-          (isControl ? " control" : "") + 
-          (i === state.selected ? " selected" : "");
-        
-        var html = "";
-        if (!isControl) {
-          html += '<img class="menu-icon" src="' + (item.icon || "") + '" alt="">';
-        }
-        html += '<span>' + (item.label || "Item") + '</span>';
-        
-        if (isToggle) {
-          html += '<span class="control-toggle' + (toggleValue ? " on" : "") + '" style="--toggle-x:' + (toggleValue ? 15 : 0) + 'px" aria-label="' + (toggleValue ? "On" : "Off") + '"></span>';
-        } else if (!isControl) {
-          html += '<span class="chevron">›</span>';
-        }
-        
-        row.innerHTML = html;
-        
-        (function(index, itemData) {
-          row.addEventListener("click", function() {
-            state.selected = index;
-            if (isControl) {
-              activateControl(itemData);
-            } else {
-              enterPage(itemData);
-            }
-            updateSelectionVisuals();
-          });
-        })(i, item);
-        
-        menuList.appendChild(row);
-      }
-      
-      var selected = getSelectedItem();
-      if (selected) {
-        tooltip.textContent = selected.desc || selected.tooltip || "";
-        counter.textContent = (state.selected + 1) + "/" + items.length;
-      } else {
-        counter.textContent = "0/" + items.length;
-      }
-    }
-    
-    function render() {
-      console.log("Rendering, pages:", state.pages.length);
-      renderTabBar();
-      renderMenuItems();
-      
-      requestAnimationFrame(function() {
-        var targetRow = menuList.querySelectorAll(".menu-item")[state.selected];
-        if (targetRow) {
-          state.targetY = targetRow.offsetTop;
-        }
-      });
-    }
-    
+
     function updateSelectionVisuals() {
-      var rows = menuList.querySelectorAll(".menu-item");
-      for (var i = 0; i < rows.length; i++) {
-        rows[i].classList.toggle("selected", i === state.selected);
-      }
-      
-      var item = getSelectedItem();
+      menuList.querySelectorAll(".menu-item").forEach((r, i) => r.classList.toggle("selected", i === selected));
+      const item = selectedItem();
       if (item) {
-        tooltip.textContent = item.desc || item.tooltip || "";
-        var items = getCurrentItems();
-        counter.textContent = (state.selected + 1) + "/" + items.length;
+        tooltip.textContent = currentPage()?.tooltip || item.desc || "";
+        counter.textContent = `${selected + 1}/${currentItems().length}`;
       }
+      moveGliderToSelection(false);
     }
-    
-    function moveSelection(direction) {
-      var items = getCurrentItems();
-      if (!items || items.length === 0) return;
-      state.selected = (state.selected + direction + items.length) % items.length;
+
+    function moveSelection(dir) {
+      const items = currentItems();
+      if (!items.length) return;
+      selected = (selected + Number(dir || 0) + items.length) % items.length;
       updateSelectionVisuals();
     }
-    
+
+    function moveGliderToSelection(immediate = false) {
+      const row = menuList.querySelectorAll(".menu-item")[selected];
+      if (!row) return;
+      targetY = row.offsetTop;
+      if (immediate) smoothY = targetY;
+      menuList.style.setProperty("--glider-y", `${smoothY}px`);
+    }
+
+    function render() {
+      const items = currentItems();
+      if (selected >= items.length) selected = Math.max(0, items.length - 1);
+      menuList.classList.toggle("main-view",  pageStack.length === 0);
+      menuList.classList.toggle("page-view",  pageStack.length > 0);
+      menuList.replaceChildren();
+
+      const glider = document.createElement("div");
+      glider.className = "selection-glider";
+      glider.style.transform = `translateY(${smoothY}px)`;
+      menuList.appendChild(glider);
+
+      items.forEach((item, i) => {
+        const isControl = pageStack.length > 0;
+        const isToggle  = isControl && Object.prototype.hasOwnProperty.call(item, "toggle");
+        const initX     = Object.prototype.hasOwnProperty.call(item, "toggleX") ? item.toggleX : (item.toggle ? 15 : 0);
+        if (isToggle && !Object.prototype.hasOwnProperty.call(item, "toggleX")) item.toggleX = initX;
+
+        const row = document.createElement("div");
+        row.className = "menu-item" + (isControl ? " control" : "") + (i === selected ? " selected" : "");
+        row.innerHTML = `
+          ${isControl ? "" : `<img class="menu-icon" src="${item.icon}" alt="">`}
+          <span>${item.label}</span>
+          ${isToggle
+            ? `<span class="control-toggle${item.toggle ? " on" : ""}" style="--toggle-x:${initX}px" aria-label="${item.toggle ? "On" : "Off"}"></span>`
+            : (!isControl ? `<span class="chevron">›</span>` : "")}
+        `;
+        row.addEventListener("click", () => {
+          selected = i;
+          if (isControl) activateControl(item);
+          updateSelectionVisuals();
+        });
+        menuList.appendChild(row);
+      });
+
+      updateTabBar();
+      tooltip.textContent = currentPage()?.tooltip || selectedItem()?.desc || "";
+      counter.textContent = `${selected + 1}/${items.length}`;
+      requestAnimationFrame(() => {
+        if (pageStack.length > 0) smoothY = 0;
+        moveGliderToSelection(pageStack.length === 0 && selected === 0 && smoothY === 0);
+      });
+    }
+
     function activateControl(item) {
-      if (!item || !state.pageStack.length) return;
-      
-      if (item.toggle !== undefined) {
+      if (!item || !pageStack.length) return;
+      if (Object.prototype.hasOwnProperty.call(item, "toggle")) {
         item.toggle = !item.toggle;
-        var toggleX = item.toggle ? 15 : 0;
-        
-        var row = menuList.querySelectorAll(".menu-item")[state.selected];
-        var toggle = row ? row.querySelector(".control-toggle") : null;
-        if (toggle) {
-          toggle.classList.toggle("on", item.toggle);
-          toggle.style.setProperty("--toggle-x", toggleX + "px");
-          toggle.setAttribute("aria-label", item.toggle ? "On" : "Off");
-        }
-        
-        var page = getCurrentPage();
-        sendToggleChange(page ? page.label : "Main", item.id, item.label, item.toggle);
+        if (!Number.isFinite(item.toggleX)) item.toggleX = item.toggle ? 15 : 0;
+        const row = menuList.querySelectorAll(".menu-item")[selected];
+        const tog = row?.querySelector(".control-toggle");
+        if (tog) { tog.classList.toggle("on", item.toggle); tog.setAttribute("aria-label", item.toggle ? "On" : "Off"); }
+        const ep = { page: currentPage()?.label || "Main", id: item.id, label: item.label, value: item.toggle };
+        emitWaveEvent("toggleChanged", ep);
+        emitActionMessage("toggle", ep);
       } else {
-        var page = getCurrentPage();
-        sendButtonPress(page ? page.label : "Main", item.id, item.label);
+        const ep = { page: currentPage()?.label || "Main", id: item.id, label: item.label };
+        emitWaveEvent("buttonPressed", ep);
+        emitActionMessage("button", ep);
       }
+      tooltip.textContent = currentPage()?.tooltip || item.desc;
     }
-    
-    function enterPage(item) {
-      if (!item) return;
-      
-      if (!item.children || item.children.length === 0) {
-        sendButtonPress("Main", item.id, item.label);
-        return;
-      }
-      
-      state.pageStack.push(item);
-      state.activeTab = 0;
-      state.selected = 0;
-      state.smoothY = 0;
-      state.targetY = 0;
+
+    function enterPage() {
+      const item = selectedItem();
+      if (!item || !item.children?.length) return;
+      pageStack.push(item); activeTab = 0; selected = 0; smoothY = 0; targetY = 0;
       render();
     }
-    
+
     function goBack() {
-      if (state.pageStack.length === 0) return;
-      state.pageStack.pop();
-      state.activeTab = 0;
-      state.selected = 0;
-      state.smoothY = 0;
-      state.targetY = 0;
+      if (!pageStack.length) return;
+      pageStack.pop(); activeTab = 0; selected = 0; smoothY = 0; targetY = 0;
       render();
     }
-    
-    function switchTab(direction) {
-      var page = getCurrentPage();
+
+    function switchTab(dir) {
+      const page = currentPage();
       if (!page || page.children.length < 2) return;
-      state.activeTab = (state.activeTab + direction + page.children.length) % page.children.length;
-      state.selected = 0;
-      state.smoothY = 0;
-      state.targetY = 0;
+      activeTab = (activeTab + dir + page.children.length) % page.children.length;
+      selected = 0; smoothY = 0; targetY = 0;
       render();
     }
-    
+
     function animateSelection() {
-      state.smoothY += (state.targetY - state.smoothY) * 0.18;
-      if (Math.abs(state.targetY - state.smoothY) < 0.08) state.smoothY = state.targetY;
-      
-      var glider = menuList.querySelector(".selection-glider");
-      if (glider) glider.style.transform = "translateY(" + state.smoothY + "px)";
-      
+      smoothY += (targetY - smoothY) * 0.18;
+      if (Math.abs(targetY - smoothY) < 0.08) smoothY = targetY;
+      const glider = menuList.querySelector(".selection-glider");
+      if (glider) glider.style.transform = `translateY(${smoothY}px)`;
+      menuList.querySelectorAll(".menu-item").forEach((row, i) => {
+        const item = currentItems()[i];
+        const tog  = row.querySelector(".control-toggle");
+        if (item && tog && Object.prototype.hasOwnProperty.call(item, "toggle")) {
+          const curX  = Number.isFinite(item.toggleX) ? item.toggleX : (item.toggle ? 15 : 0);
+          const tarX  = item.toggle ? 15 : 0;
+          const nextX = curX + (tarX - curX) * 0.2;
+          item.toggleX = Math.abs(tarX - nextX) < 0.05 ? tarX : nextX;
+          tog.style.setProperty("--toggle-x", `${item.toggleX}px`);
+          tog.classList.toggle("on", item.toggle);
+        }
+      });
       requestAnimationFrame(animateSelection);
     }
-    
-    // ============================================
-    // MESSAGE HANDLERS
-    // ============================================
-    
-    function handleMessage(data) {
-      console.log("HTML received:", data);
-      
-      if (!data) return;
-      
-      // Parse if string
-      if (typeof data === "string") {
-        try {
-          data = JSON.parse(data);
-        } catch (e) {
-          console.error("Failed to parse:", data);
-          return;
-        }
+
+    // ─── keyboard ────────────────────────────────────────────────────────────
+    document.addEventListener("keydown", ev => {
+      const key = ev.key.toLowerCase();
+      if (ev.key === "Backspace") { goBack(); ev.preventDefault(); return; }
+      if (pageStack.length && key === "e") { switchTab(1);  ev.preventDefault(); return; }
+      if (pageStack.length && key === "q") { switchTab(-1); ev.preventDefault(); return; }
+      if (ev.key === "Enter") {
+        if (!pageStack.length) enterPage(); else activateControl(selectedItem());
+        ev.preventDefault(); return;
       }
-      
-      // Ignore our own messages
-      if (data.source === "wave-ui") return;
-      
-      var type = data.type || data.action || "";
-      console.log("Processing type:", type);
-      
-      switch (type) {
-        case "createPage":
-          console.log("Creating page with data:", data.page);
-          if (data.page) {
-            var page = {
-              id: data.page.id || data.page.label.toLowerCase().replace(/\s+/g, "-"),
-              label: data.page.label || "Page",
-              desc: data.page.desc || "",
-              tooltip: data.page.tooltip || "",
-              children: []
-            };
-            
-            var existing = findPage(page.id);
-            if (!existing) {
-              state.pages.push(page);
-              console.log("Page added, total:", state.pages.length);
-              render();
-            }
-          }
-          break;
-          
-        case "createTopTab":
-          console.log("Creating top tab:", data.pageId, data.tab);
-          if (data.pageId && data.tab) {
-            var page = findPage(data.pageId);
-            if (page) {
-              var tab = {
-                id: data.tab.id || data.tab.label.toLowerCase().replace(/\s+/g, "-"),
-                label: data.tab.label || "Tab",
-                desc: data.tab.desc || "",
-                buttons: []
-              };
-              
-              var existing = findTab(page, tab.id);
-              if (!existing) {
-                page.children.push(tab);
-                console.log("Tab added to page, now has", page.children.length, "tabs");
-                render();
-              }
-            } else {
-              console.error("Page not found:", data.pageId);
-            }
-          }
-          break;
-          
-        case "createButton":
-          console.log("Creating button:", data.pageId, data.button);
-          if (data.pageId && data.button) {
-            var page = findPage(data.pageId);
-            if (page) {
-              var tab = page.children[state.activeTab] || page.children[0];
-              if (tab) {
-                var button = {
-                  id: data.button.id || data.button.label.toLowerCase().replace(/\s+/g, "-"),
-                  label: data.button.label || "Button",
-                  desc: data.button.desc || "",
-                  icon: data.button.icon || "",
-                  toggle: data.button.toggle !== undefined ? data.button.toggle : undefined
-                };
-                tab.buttons.push(button);
-                console.log("Button added to tab, now has", tab.buttons.length, "buttons");
-                render();
-              } else {
-                console.error("No tab found for page:", data.pageId);
-              }
-            } else {
-              console.error("Page not found:", data.pageId);
-            }
-          }
-          break;
-          
-        case "createToggle":
-          console.log("Creating toggle:", data.pageId, data.toggle);
-          if (data.pageId && data.toggle) {
-            var page = findPage(data.pageId);
-            if (page) {
-              var tab = page.children[state.activeTab] || page.children[0];
-              if (tab) {
-                var toggle = {
-                  id: data.toggle.id || data.toggle.label.toLowerCase().replace(/\s+/g, "-"),
-                  label: data.toggle.label || "Toggle",
-                  desc: data.toggle.desc || "",
-                  icon: data.toggle.icon || "",
-                  toggle: data.toggle.toggle || false
-                };
-                tab.buttons.push(toggle);
-                console.log("Toggle added");
-                render();
-              }
-            }
-          }
-          break;
-          
-        case "openPage":
-          console.log("Opening page:", data.pageId);
-          if (data.pageId) {
-            var page = findPage(data.pageId);
-            if (page) {
-              state.pageStack = [page];
-              state.activeTab = 0;
-              state.selected = 0;
-              state.smoothY = 0;
-              state.targetY = 0;
-              render();
-            } else {
-              console.error("Page not found:", data.pageId);
-            }
-          }
-          break;
-          
-        case "setToggle":
-          console.log("Setting toggle:", data.pageId, data.buttonId, data.value);
-          if (data.pageId && data.buttonId) {
-            var page = findPage(data.pageId);
-            if (page) {
-              for (var i = 0; i < page.children.length; i++) {
-                var tab = page.children[i];
-                for (var j = 0; j < tab.buttons.length; j++) {
-                  var button = tab.buttons[j];
-                  if (button.id === data.buttonId && button.toggle !== undefined) {
-                    button.toggle = !!data.value;
-                    render();
-                    return;
-                  }
-                }
-              }
-            }
-          }
-          break;
-          
-        case "scroll":
-          moveSelection(data.direction || 1);
-          break;
-          
-        case "clearPages":
-          state.pages = [];
-          state.pageStack = [];
-          state.activeTab = 0;
-          state.selected = 0;
-          state.smoothY = 0;
-          state.targetY = 0;
-          render();
-          break;
-          
-        case "bootstrap":
-          console.log("Bootstrapping:", data.config);
-          if (data.config && data.config.pages) {
-            state.pages = [];
-            state.pageStack = [];
-            
-            for (var i = 0; i < data.config.pages.length; i++) {
-              var rawPage = data.config.pages[i];
-              var page = {
-                id: rawPage.id || rawPage.label.toLowerCase().replace(/\s+/g, "-"),
-                label: rawPage.label || "Page",
-                desc: rawPage.desc || "",
-                tooltip: rawPage.tooltip || "",
-                children: []
-              };
-              
-              if (rawPage.tabs) {
-                for (var j = 0; j < rawPage.tabs.length; j++) {
-                  var rawTab = rawPage.tabs[j];
-                  var tab = {
-                    id: rawTab.id || rawTab.label.toLowerCase().replace(/\s+/g, "-"),
-                    label: rawTab.label || "Tab",
-                    desc: rawTab.desc || "",
-                    buttons: []
-                  };
-                  
-                  if (rawTab.buttons) {
-                    for (var k = 0; k < rawTab.buttons.length; k++) {
-                      var rawButton = rawTab.buttons[k];
-                      var button = {
-                        id: rawButton.id || rawButton.label.toLowerCase().replace(/\s+/g, "-"),
-                        label: rawButton.label || "Button",
-                        desc: rawButton.desc || "",
-                        icon: rawButton.icon || "",
-                        toggle: rawButton.toggle !== undefined ? rawButton.toggle : undefined
-                      };
-                      tab.buttons.push(button);
-                    }
-                  }
-                  
-                  page.children.push(tab);
-                }
-              }
-              
-              state.pages.push(page);
-            }
-            
-            console.log("Bootstrap complete, pages:", state.pages.length);
-            render();
-          }
-          break;
-          
-        default:
-          console.log("Unknown message type:", type);
-      }
-    }
-    
-    // ============================================
-    // KEYBOARD CONTROLS
-    // ============================================
-    
-    document.addEventListener("keydown", function(event) {
-      if (event.key === "Backspace") {
-        goBack();
-        event.preventDefault();
-        return;
-      }
-      
-      if (state.pageStack.length && event.key.toLowerCase() === "e") {
-        switchTab(1);
-        event.preventDefault();
-        return;
-      }
-      
-      if (state.pageStack.length && event.key.toLowerCase() === "q") {
-        switchTab(-1);
-        event.preventDefault();
-        return;
-      }
-      
-      if (event.key === "Enter") {
-        var item = getSelectedItem();
-        if (!state.pageStack.length) {
-          enterPage(item);
-        } else {
-          activateControl(item);
-        }
-        event.preventDefault();
-        return;
-      }
-      
-      if (event.key === "ArrowDown" || event.key === "ArrowRight") {
-        moveSelection(1);
-        event.preventDefault();
-      }
-      
-      if (event.key === "ArrowUp" || event.key === "ArrowLeft") {
-        moveSelection(-1);
-        event.preventDefault();
-      }
+      if (ev.key === "ArrowDown"  || ev.key === "ArrowRight") { moveSelection(1);  ev.preventDefault(); }
+      if (ev.key === "ArrowUp"    || ev.key === "ArrowLeft")  { moveSelection(-1); ev.preventDefault(); }
     });
-    
-    // ============================================
-    // MESSAGE LISTENERS
-    // ============================================
-    
-    // Listen for postMessage
-    window.addEventListener("message", function(event) {
-      console.log("postMessage received:", event.data);
-      try {
-        if (typeof event.data === "string") {
-          handleMessage(JSON.parse(event.data));
-        } else {
-          handleMessage(event.data);
-        }
-      } catch (e) {
-        console.error("Error processing postMessage:", e);
-      }
-    });
-    
-    // Hook into invokeNative for redENGINE
-    if (typeof window.invokeNative === "function") {
-      console.log("invokeNative available");
-      var originalInvoke = window.invokeNative;
-      window.invokeNative = function(name, payload) {
-        if (name === "redui") {
-          console.log("invokeNative called:", payload);
-          try {
-            var data = typeof payload === "string" ? JSON.parse(payload) : payload;
-            handleMessage(data);
-          } catch (e) {
-            console.error("Error in invokeNative handler:", e);
-          }
-        }
-        if (originalInvoke) {
-          return originalInvoke(name, payload);
-        }
-      };
-    }
-    
-    // ============================================
-    // INITIALIZATION
-    // ============================================
-    
-    console.log("Initializing Wave Menu...");
-    
-    // Initial render
+
+    // ─── boot ────────────────────────────────────────────────────────────────
     render();
-    
-    // Send ready signals
-    setTimeout(sendReady, 100);
-    setTimeout(sendReady, 500);
-    setTimeout(sendReady, 1000);
-    
-    // Start animation loop
+    uiReady = true;
+    pendingUiMessages.splice(0).forEach(m => handleDuiMessage({ data: m }));
+    emitWaveEvent("ready", {
+      api: ["createButton","createToggle","createPage","createTopTab",
+            "setToolTipForPage","openPage","scroll","setToggle",
+            "clearPageItems","clearPages","bootstrap"],
+      eventType: "wave_ui_event"
+    });
     requestAnimationFrame(animateSelection);
-    
-    console.log("Wave Menu initialized, waiting for Lua messages...");
   </script>
 </body>
 </html>
